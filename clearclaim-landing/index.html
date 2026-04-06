@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClearClaim — Eliminate Duplicate Claims. Accelerate Construction Payments.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      color: #0f1f3d;
+      background: #fff;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ===== VARIABLES ===== */
+    :root {
+      --navy: #0f1f3d;
+      --navy-light: #162840;
+      --blue: #2563eb;
+      --blue-light: #3b82f6;
+      --blue-pale: #eff6ff;
+      --green: #10b981;
+      --green-pale: #ecfdf5;
+      --grey-bg: #f8fafc;
+      --grey-border: #e2e8f0;
+      --grey-text: #64748b;
+      --white: #ffffff;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.1);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,.15);
+      --radius: 12px;
+      --radius-lg: 20px;
+    }
+
+    /* ===== UTILITIES ===== */
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 96px 0; }
+    .section--grey { background: var(--grey-bg); }
+    .section--dark { background: var(--navy); color: var(--white); }
+    .section-label {
+      display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--blue); background: var(--blue-pale);
+      padding: 5px 14px; border-radius: 999px; margin-bottom: 16px;
+    }
+    .section-label--green { color: var(--green); background: var(--green-pale); }
+    .section-label--white { color: var(--green); background: rgba(16,185,129,.12); }
+    .section-title { font-size: clamp(28px, 4vw, 40px); font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+    .section-sub { font-size: 18px; color: var(--grey-text); max-width: 580px; }
+    .section-sub--center { margin: 0 auto; text-align: center; }
+    .text-center { text-align: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: 600;
+      cursor: pointer; border: none; transition: all .2s ease;
+    }
+    .btn-primary {
+      background: var(--blue); color: #fff;
+      box-shadow: 0 4px 14px rgba(37,99,235,.35);
+    }
+    .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.4); }
+    .btn-secondary {
+      background: transparent; color: var(--navy);
+      border: 2px solid var(--grey-border);
+    }
+    .btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-secondary--white { color: #fff; border-color: rgba(255,255,255,.4); }
+    .btn-secondary--white:hover { border-color: #fff; background: rgba(255,255,255,.08); }
+    .btn-lg { padding: 16px 36px; font-size: 17px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(16,185,129,.12); color: var(--green);
+      border: 1px solid rgba(16,185,129,.25); border-radius: 999px;
+      font-size: 13px; font-weight: 600; padding: 6px 16px; letter-spacing: .03em;
+    }
+    .badge svg { flex-shrink: 0; }
+
+    /* ===== ANIMATIONS ===== */
+    .fade-in { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+    .fade-in.visible { opacity: 1; transform: none; }
+    .fade-in-delay-1 { transition-delay: .1s; }
+    .fade-in-delay-2 { transition-delay: .2s; }
+    .fade-in-delay-3 { transition-delay: .3s; }
+    .fade-in-delay-4 { transition-delay: .4s; }
+    .count-up { font-variant-numeric: tabular-nums; }
+
+    /* ===== NAV ===== */
+    #nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--grey-border);
+      transition: box-shadow .2s;
+    }
+    #nav.scrolled { box-shadow: var(--shadow-md); }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 68px; gap: 32px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 20px; font-weight: 800; color: var(--navy);
+      flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 36px; height: 36px; background: var(--navy);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 32px;
+      list-style: none; flex: 1; justify-content: center;
+    }
+    .nav-links a { font-size: 15px; font-weight: 500; color: #475569; transition: color .2s; }
+    .nav-links a:hover { color: var(--navy); }
+    .nav-cta { flex-shrink: 0; }
+    .nav-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+    .nav-hamburger span { width: 24px; height: 2px; background: var(--navy); border-radius: 2px; transition: .3s; }
+    .mobile-nav {
+      display: none; position: fixed; inset: 0; top: 68px; background: #fff; z-index: 99;
+      padding: 32px 24px; flex-direction: column; gap: 24px;
+    }
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a { font-size: 18px; font-weight: 600; color: var(--navy); padding: 8px 0; border-bottom: 1px solid var(--grey-border); }
+
+    /* ===== HERO ===== */
+    #hero {
+      background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #f0fdf4 100%);
+      padding: 80px 0 64px;
+      overflow: hidden;
+    }
+    .hero-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+    }
+    .hero-text { display: flex; flex-direction: column; gap: 24px; }
+    .hero-title {
+      font-size: clamp(32px, 5vw, 52px); font-weight: 900; line-height: 1.1;
+      letter-spacing: -.02em; color: var(--navy);
+    }
+    .hero-title span { color: var(--blue); }
+    .hero-sub { font-size: 18px; color: var(--grey-text); line-height: 1.7; }
+    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .hero-trust { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+    .hero-trust-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--grey-text); font-weight: 500; }
+
+    /* ===== MOCK DASHBOARD ===== */
+    .hero-visual { position: relative; }
+    .mock-dashboard {
+      background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+      border: 1px solid var(--grey-border); overflow: hidden;
+    }
+    .mock-topbar {
+      background: var(--navy); padding: 12px 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .mock-topbar-title {
+      margin-left: 8px; color: rgba(255,255,255,.7); font-size: 12px; font-weight: 500;
+    }
+    .mock-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .mock-header { display: flex; align-items: center; justify-content: space-between; }
+    .mock-header h3 { font-size: 15px; font-weight: 700; color: var(--navy); }
+    .mock-status {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+      background: #fef9c3; color: #713f12;
+    }
+    .mock-row {
+      display: grid; grid-template-columns: 2fr 1fr 1fr;
+      gap: 8px; font-size: 12px;
+    }
+    .mock-row-header { color: var(--grey-text); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding-bottom: 6px; border-bottom: 1px solid var(--grey-border); }
+    .mock-row-data { color: var(--navy); font-weight: 500; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+    .mock-amount { font-weight: 700; color: var(--navy); }
+    .mock-progress { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 4px; }
+    .mock-progress-bar { height: 100%; background: var(--blue); border-radius: 2px; }
+
+    /* AI Alert in mock */
+    .mock-ai-alert {
+      background: linear-gradient(135deg, #fff7ed, #fef3c7);
+      border: 1.5px solid #f59e0b; border-radius: 10px; padding: 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .mock-ai-alert-header {
+      display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #92400e;
+    }
+    .ai-pulse {
+      width: 8px; height: 8px; background: #f59e0b; border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: .7; }
+    }
+    .mock-ai-alert-body { font-size: 11px; color: #78350f; line-height: 1.5; }
+    .mock-ai-alert-codes {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .mock-code-chip {
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+      background: rgba(245,158,11,.15); color: #92400e; font-family: monospace;
+    }
+    .mock-ai-confidence {
+      display: flex; align-items: center; gap: 8px; font-size: 10px; color: #92400e; font-weight: 600;
+    }
+    .mock-confidence-bar { flex: 1; height: 4px; background: rgba(245,158,11,.2); border-radius: 2px; overflow: hidden; }
+    .mock-confidence-fill { height: 100%; background: #f59e0b; border-radius: 2px; width: 87%; }
+    .mock-ai-actions { display: flex; gap: 8px; }
+    .mock-btn-sm {
+      font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 5px; cursor: pointer;
+      border: none;
+    }
+    .mock-btn-dismiss { background: rgba(245,158,11,.15); color: #92400e; }
+    .mock-btn-review { background: #f59e0b; color: #fff; }
+    .floating-badge {
+      position: absolute; top: -12px; right: -12px;
+      background: var(--green); color: #fff; border-radius: 999px;
+      font-size: 11px; font-weight: 700; padding: 6px 14px;
+      box-shadow: 0 4px 12px rgba(16,185,129,.4);
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* ===== PROBLEM SECTION ===== */
+    .problem-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 48px;
+    }
+    .problem-card {
+      background: #fff; border-radius: var(--radius); border: 1px solid var(--grey-border);
+      padding: 28px; position: relative; overflow: hidden;
+      box-shadow: var(--shadow-sm); transition: box-shadow .2s, transform .2s;
+    }
+    .problem-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .problem-icon {
+      width: 48px; height: 48px; border-radius: 12px; background: #fff1f2;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    }
+    .problem-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; color: var(--navy); }
+    .problem-card p { font-size: 14px; color: var(--grey-text); line-height: 1.6; }
+    .problem-num {
+      position: absolute; top: 20px; right: 20px;
+      font-size: 40px; font-weight: 900; color: rgba(239,68,68,.06); line-height: 1;
+    }
+
+    /* ===== SOLUTION SECTION ===== */
+    .solution-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .solution-points { display: flex; flex-direction: column; gap: 28px; }
+    .solution-point {
+      display: flex; gap: 20px; align-items: flex-start;
+      opacity: 0; transform: translateX(-20px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+    .solution-point.visible { opacity: 1; transform: none; }
+    .solution-point-icon {
+      width: 48px; height: 48px; border-radius: 12px; background: var(--blue-pale);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .solution-point h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .solution-point p { font-size: 14px; color: var(--grey-text); }
+
+    /* Solution visual */
+    .solution-visual {
+      background: var(--navy); border-radius: var(--radius-lg); padding: 32px;
+      position: relative;
+    }
+    .workflow-mini { display: flex; flex-direction: column; gap: 12px; }
+    .workflow-mini-step {
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(255,255,255,.07); border-radius: 10px; padding: 14px 18px;
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .workflow-mini-num {
+      width: 32px; height: 32px; background: var(--blue); color: #fff;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .workflow-mini-text { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); }
+    .workflow-mini-sub { font-size: 12px; color: rgba(255,255,255,.5); }
+    .workflow-mini-connector {
+      width: 2px; height: 12px; background: rgba(255,255,255,.15);
+      margin-left: 47px;
+    }
+    .solution-visual-badge {
+      position: absolute; bottom: -12px; right: 24px;
+      background: var(--green); color: #fff; border-radius: 8px;
+      font-size: 12px; font-weight: 700; padding: 8px 16px;
+      box-shadow: 0 4px 16px rgba(16,185,129,.4);
+    }
+
+    /* ===== FEATURES ===== */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px;
+    }
+    .feature-card {
+      background: #fff; border-radius: var(--radius); border: 1px solid var(--grey-border);
+      padding: 32px; transition: all .3s ease; box-shadow: var(--shadow-sm);
+    }
+    .feature-card:hover { border-color: var(--blue); box-shadow: 0 8px 32px rgba(37,99,235,.1); transform: translateY(-4px); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feature-icon--blue { background: var(--blue-pale); }
+    .feature-icon--green { background: var(--green-pale); }
+    .feature-icon--purple { background: #f5f3ff; }
+    .feature-icon--orange { background: #fff7ed; }
+    .feature-icon--teal { background: #f0fdfa; }
+    .feature-icon--navy { background: #f0f4ff; }
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--navy); }
+    .feature-card p { font-size: 14px; color: var(--grey-text); line-height: 1.65; }
+
+    /* ===== AI SECTION ===== */
+    #ai { padding: 96px 0; }
+    .ai-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-top: 48px;
+    }
+    .ai-capabilities { display: flex; flex-direction: column; gap: 24px; }
+    .ai-cap {
+      display: flex; gap: 18px; align-items: flex-start;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--radius); padding: 24px;
+      transition: background .2s, border-color .2s;
+    }
+    .ai-cap:hover { background: rgba(255,255,255,.1); border-color: rgba(16,185,129,.4); }
+    .ai-cap-icon {
+      width: 44px; height: 44px; background: rgba(16,185,129,.15); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .ai-cap h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .ai-cap p { font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.6; }
+
+    /* AI Alert Mock */
+    .ai-alert-mock {
+      background: rgba(255,255,255,.05); border-radius: var(--radius-lg);
+      border: 1px solid rgba(255,255,255,.12); padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .ai-alert-mock-header {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; font-weight: 700; color: rgba(255,255,255,.9);
+    }
+    .ai-alert-chip {
+      background: rgba(245,158,11,.2); color: #fbbf24; border: 1px solid rgba(245,158,11,.3);
+      border-radius: 999px; font-size: 11px; font-weight: 600; padding: 2px 10px;
+    }
+    .ai-compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .ai-compare-side {
+      background: rgba(255,255,255,.06); border-radius: 8px; padding: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .ai-compare-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.4); font-weight: 600; margin-bottom: 8px; }
+    .ai-compare-item { font-size: 12px; color: rgba(255,255,255,.8); line-height: 1.5; }
+    .ai-compare-item strong { color: #fbbf24; }
+    .ai-match-bar { margin-top: 4px; }
+    .ai-match-label { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,.5); margin-bottom: 6px; }
+    .ai-match-track { height: 6px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden; }
+    .ai-match-fill { height: 100%; background: linear-gradient(90deg, var(--green), #34d399); border-radius: 3px; width: 87%; animation: grow-bar 1.5s ease forwards; }
+    @keyframes grow-bar { from { width: 0; } to { width: 87%; } }
+    .ai-flag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ai-flag {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #fbbf24;
+      background: rgba(245,158,11,.1); border-radius: 6px; padding: 4px 10px;
+    }
+
+    /* ===== WORKFLOW ===== */
+    .workflow-steps {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 56px;
+      position: relative;
+    }
+    .workflow-steps::before {
+      content: ''; position: absolute; top: 36px; left: calc(12.5% + 36px); right: calc(12.5% + 36px);
+      height: 2px; background: linear-gradient(90deg, var(--blue), var(--green));
+    }
+    .workflow-step { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 16px; }
+    .workflow-step-circle {
+      width: 72px; height: 72px; border-radius: 50%; background: #fff;
+      border: 3px solid var(--blue); display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: var(--blue); margin-bottom: 20px;
+      position: relative; z-index: 1; box-shadow: var(--shadow-md);
+      transition: background .3s, color .3s;
+    }
+    .workflow-step:hover .workflow-step-circle { background: var(--blue); color: #fff; }
+    .workflow-step:nth-child(4) .workflow-step-circle { border-color: var(--green); color: var(--green); }
+    .workflow-step:nth-child(4):hover .workflow-step-circle { background: var(--green); color: #fff; }
+    .workflow-step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--navy); }
+    .workflow-step p { font-size: 13px; color: var(--grey-text); line-height: 1.6; }
+    .workflow-step-tag {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; margin-top: 10px;
+    }
+    .tag-blue { background: var(--blue-pale); color: var(--blue); }
+    .tag-green { background: var(--green-pale); color: var(--green); }
+
+    /* ===== BENEFITS ===== */
+    .benefits-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 56px; }
+    .benefit-card {
+      background: #fff; border-radius: var(--radius-lg); padding: 40px 28px;
+      text-align: center; border: 1px solid var(--grey-border);
+      box-shadow: var(--shadow-sm); transition: all .3s;
+    }
+    .benefit-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
+    .benefit-stat {
+      font-size: 42px; font-weight: 900; color: var(--blue); line-height: 1;
+      margin-bottom: 12px; letter-spacing: -.02em;
+    }
+    .benefit-stat.green { color: var(--green); }
+    .benefit-label { font-size: 15px; font-weight: 600; color: var(--navy); line-height: 1.4; }
+
+    /* ===== INTEGRATIONS ===== */
+    .integrations-logos {
+      display: flex; align-items: center; justify-content: center; gap: 20px;
+      flex-wrap: wrap; margin-top: 48px;
+    }
+    .integration-chip {
+      background: #fff; border: 1.5px solid var(--grey-border); border-radius: 12px;
+      padding: 18px 32px; font-size: 18px; font-weight: 800; color: var(--navy);
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: var(--shadow-sm); transition: all .2s;
+    }
+    .integration-chip:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .integration-chip .chip-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .coming-soon {
+      margin-top: 24px; font-size: 14px; color: var(--grey-text);
+      display: flex; align-items: center; gap: 8px; justify-content: center;
+    }
+
+    /* ===== PRICING ===== */
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px;
+      align-items: start;
+    }
+    .pricing-card {
+      background: #fff; border-radius: var(--radius-lg); border: 2px solid var(--grey-border);
+      padding: 36px; position: relative; transition: all .3s;
+    }
+    .pricing-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+    .pricing-card--featured {
+      border-color: var(--blue); box-shadow: 0 8px 40px rgba(37,99,235,.15);
+    }
+    .pricing-featured-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--blue); color: #fff; font-size: 12px; font-weight: 700;
+      padding: 4px 16px; border-radius: 999px;
+    }
+    .pricing-tier { font-size: 14px; font-weight: 600; color: var(--grey-text); margin-bottom: 12px; }
+    .pricing-price { margin-bottom: 8px; }
+    .pricing-amount { font-size: 44px; font-weight: 900; color: var(--navy); }
+    .pricing-period { font-size: 16px; font-weight: 500; color: var(--grey-text); }
+    .pricing-users { font-size: 13px; color: var(--grey-text); margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--grey-border); }
+    .pricing-features { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    .pricing-feature {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: var(--navy);
+    }
+    .pricing-feature svg { flex-shrink: 0; }
+    .pricing-cta { display: block; text-align: center; width: 100%; }
+    .pricing-custom {
+      font-size: 44px; font-weight: 900; color: var(--navy);
+    }
+
+    /* ===== FINAL CTA ===== */
+    #cta { background: var(--navy); padding: 100px 0; }
+    .cta-inner { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+    .cta-title { font-size: clamp(32px, 5vw, 52px); font-weight: 900; color: #fff; line-height: 1.15; }
+    .cta-title span { color: var(--blue-light); }
+    .cta-sub { font-size: 18px; color: rgba(255,255,255,.65); max-width: 520px; }
+    .cta-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .cta-trust { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .cta-trust-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.5); }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: #080f1d; border-top: 1px solid rgba(255,255,255,.06);
+      padding: 56px 0 32px; color: rgba(255,255,255,.6);
+    }
+    .footer-inner {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 40px;
+    }
+    .footer-brand { display: flex; flex-direction: column; gap: 12px; }
+    .footer-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 18px; font-weight: 800; color: #fff;
+    }
+    .footer-tagline { font-size: 14px; line-height: 1.6; }
+    .footer-col h4 { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 16px; text-transform: uppercase; letter-spacing: .06em; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a { font-size: 14px; color: rgba(255,255,255,.5); transition: color .2s; }
+    .footer-col ul li a:hover { color: #fff; }
+    .footer-bottom {
+      padding-top: 32px; border-top: 1px solid rgba(255,255,255,.06);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .footer-bottom p { font-size: 13px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .problem-grid { grid-template-columns: repeat(2, 1fr); }
+      .benefits-grid { grid-template-columns: repeat(2, 1fr); }
+      .workflow-steps { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+      .workflow-steps::before { display: none; }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .section { padding: 64px 0; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .solution-inner { grid-template-columns: 1fr; }
+      .ai-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .benefits-grid { grid-template-columns: 1fr 1fr; }
+      .workflow-steps { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .nav-links, .nav-cta { display: none; }
+      .nav-hamburger { display: flex; }
+      .footer-bottom { flex-direction: column; text-align: center; }
+    }
+    @media (max-width: 480px) {
+      .benefits-grid { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; width: 100%; }
+      .hero-actions .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav id="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 1.5L3 4.5V9.5C3 13.4 6.1 17.1 10 18.5C13.9 17.1 17 13.4 17 9.5V4.5L10 1.5Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M7 10L9.2 12.2L13.5 7.5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        ClearClaim
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#workflow">How It Works</a></li>
+        <li><a href="#ai">AI</a></li>
+        <li><a href="#integrations">Integrations</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="#cta" class="btn btn-primary" style="padding:10px 20px;font-size:14px;">Book a Demo</a>
+      </div>
+      <div class="nav-hamburger" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobileNav">
+  <a href="#features" onclick="toggleMobileNav()">Features</a>
+  <a href="#workflow" onclick="toggleMobileNav()">How It Works</a>
+  <a href="#ai" onclick="toggleMobileNav()">AI</a>
+  <a href="#integrations" onclick="toggleMobileNav()">Integrations</a>
+  <a href="#pricing" onclick="toggleMobileNav()">Pricing</a>
+  <a href="#cta" class="btn btn-primary" onclick="toggleMobileNav()" style="text-align:center;justify-content:center;">Book a Demo</a>
+</div>
+
+<!-- ===== HERO ===== -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div>
+          <span class="badge">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1.5 3.5V7C1.5 10.05 4 12.85 7 13.85C10 12.85 12.5 10.05 12.5 7V3.5L7 1Z" stroke="#10b981" stroke-width="1.5" stroke-linejoin="round"/><path d="M4.5 7L6.2 8.7L9.8 5" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Built for UK Construction
+          </span>
+        </div>
+        <h1 class="hero-title">
+          Eliminate Duplicate Claims.<br>
+          <span>Accelerate Construction Payments.</span>
+        </h1>
+        <p class="hero-sub">
+          The intelligent platform for contractors and subcontractors to submit, review and approve valuations — with AI that catches duplicate claims before they cost you.
+        </p>
+        <div class="hero-actions">
+          <a href="#cta" class="btn btn-primary btn-lg">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="11" rx="2" stroke="white" stroke-width="1.5"/><path d="M5 4V3C5 2.4 5.4 2 6 2H12C12.6 2 13 2.4 13 3V4" stroke="white" stroke-width="1.5" stroke-linecap="round"/><path d="M9 9L9 13M7 11H11" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Book a Demo
+          </a>
+          <a href="#workflow" class="btn btn-secondary">
+            See How It Works
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+        <div class="hero-trust">
+          <div class="hero-trust-item">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L2 3.5V7C2 10.2 4.5 13.2 7.5 14.2C10.5 13.2 13 10.2 13 7V3.5L7.5 1Z" stroke="#10b981" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 7.5L6.8 9.3L10.5 5.5" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            GDPR Compliant
+          </div>
+          <div class="hero-trust-item">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#10b981" stroke-width="1.5"/><path d="M7.5 4V7.5L9.5 9.5" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/></svg>
+            UK-Based Support
+          </div>
+          <div class="hero-trust-item">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="5" width="11" height="8" rx="1.5" stroke="#10b981" stroke-width="1.5"/><path d="M5 5V3.5C5 2.1 6.1 1 7.5 1C8.9 1 10 2.1 10 3.5V5" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/></svg>
+            SOC 2 Ready
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCK DASHBOARD -->
+      <div class="hero-visual fade-in">
+        <div style="position:relative">
+          <div class="mock-dashboard">
+            <div class="mock-topbar">
+              <div class="mock-dot" style="background:#ff5f57"></div>
+              <div class="mock-dot" style="background:#ffbd2e"></div>
+              <div class="mock-dot" style="background:#28c840"></div>
+              <span class="mock-topbar-title">ClearClaim — Valuation Review · Project: Northgate Phase 2</span>
+            </div>
+            <div class="mock-body">
+              <div class="mock-header">
+                <h3>📋 Claim #VC-2847 — Steelwork Package</h3>
+                <span class="mock-status">⏳ Under Review</span>
+              </div>
+
+              <!-- Claim rows -->
+              <div>
+                <div class="mock-row mock-row-header">
+                  <span>Description</span><span>Cost Code</span><span>Amount</span>
+                </div>
+                <div class="mock-row mock-row-data">
+                  <span>Structural steelwork — Level 3 beams</span>
+                  <span style="font-family:monospace;font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">STL-003</span>
+                  <span class="mock-amount">£14,250</span>
+                </div>
+                <div class="mock-row mock-row-data">
+                  <span>Column fabrication & erection</span>
+                  <span style="font-family:monospace;font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">STL-007</span>
+                  <span class="mock-amount">£8,800</span>
+                </div>
+                <div class="mock-row mock-row-data" style="background:#fff8f0;border-radius:6px;padding:8px 4px;">
+                  <span style="color:#92400e;">🔴 Beam installation — grid A-D</span>
+                  <span style="font-family:monospace;font-size:11px;background:#fef3c7;padding:2px 6px;border-radius:4px;color:#78350f;">STL-003B</span>
+                  <span class="mock-amount" style="color:#dc2626;">£11,400</span>
+                </div>
+              </div>
+
+              <div class="mock-progress">
+                <div class="mock-progress-bar" style="width:62%"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:-10px;">
+                <span>Claim total: <strong style="color:#0f1f3d">£34,450</strong></span>
+                <span>Approved to date: £21,350</span>
+              </div>
+
+              <!-- AI Alert -->
+              <div class="mock-ai-alert">
+                <div class="mock-ai-alert-header">
+                  <div class="ai-pulse"></div>
+                  🤖 AI Duplicate Detection Alert
+                  <span style="margin-left:auto;font-size:10px;background:rgba(245,158,11,.2);padding:2px 8px;border-radius:999px;">HIGH CONFIDENCE</span>
+                </div>
+                <div class="mock-ai-alert-body">
+                  <strong>Potential duplicate detected.</strong> Line item "Beam installation — grid A-D" (STL-003B) appears to overlap with work already claimed in <strong>VC-2741</strong>.
+                </div>
+                <div class="mock-ai-alert-codes">
+                  <span class="mock-code-chip">Claim #VC-2741</span>
+                  <span class="mock-code-chip">STL-003</span>
+                  <span class="mock-code-chip">£11,400 at risk</span>
+                </div>
+                <div class="mock-ai-confidence">
+                  <span>Match confidence:</span>
+                  <div class="mock-confidence-bar">
+                    <div class="mock-confidence-fill"></div>
+                  </div>
+                  <span>87%</span>
+                </div>
+                <div class="mock-ai-actions">
+                  <button class="mock-btn-sm mock-btn-dismiss">Dismiss</button>
+                  <button class="mock-btn-sm mock-btn-review">Review Side-by-Side →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-badge">AI Active ✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROBLEM ===== -->
+<section class="section section--grey" id="problem">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label" style="background:#fff1f2;color:#dc2626;">The Problem</span>
+      <h2 class="section-title">The Hidden Cost of Manual<br>Claim Management</h2>
+      <p class="section-sub section-sub--center">Construction finance teams lose millions each year to duplicate claims, slow approvals and compliance mistakes. It doesn't have to be this way.</p>
+    </div>
+    <div class="problem-grid">
+      <div class="problem-card fade-in">
+        <div class="problem-num">01</div>
+        <div class="problem-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="#ef4444" stroke-width="1.8"/><path d="M9 12H15M9 16H13" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/><circle cx="18" cy="18" r="4" fill="#ef4444"/><path d="M16.5 18L17.5 19L19.5 17" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Duplicate & Re-claimed Work</h3>
+        <p>The same work claimed twice across different cost codes, packages or claim periods — often undetected until it's too late.</p>
+      </div>
+      <div class="problem-card fade-in fade-in-delay-1">
+        <div class="problem-num">02</div>
+        <div class="problem-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#ef4444" stroke-width="1.8"/><path d="M12 7V12L15 14" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Manual Checks & Delays</h3>
+        <p>QS teams spending hours cross-referencing spreadsheets, previous claims and supporting documentation by hand — every single week.</p>
+      </div>
+      <div class="problem-card fade-in fade-in-delay-2">
+        <div class="problem-num">03</div>
+        <div class="problem-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7V12C3 16.4 7.1 20.5 12 22C16.9 20.5 21 16.4 21 12V7L12 2Z" stroke="#ef4444" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10V12M12 15H12.01" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Complex Compliance</h3>
+        <p>VAT, CIS and DRC rules are constantly evolving. Getting them wrong means penalties, delays and damaged subcontractor relationships.</p>
+      </div>
+      <div class="problem-card fade-in fade-in-delay-3">
+        <div class="problem-num">04</div>
+        <div class="problem-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="#ef4444" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="#ef4444" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="#ef4444" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="2 2"/></svg>
+        </div>
+        <h3>Poor Visibility</h3>
+        <p>No single view across POs, work packages and cost codes. Finance teams are flying blind when approving payments worth hundreds of thousands.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOLUTION ===== -->
+<section class="section" id="solution">
+  <div class="container">
+    <div class="solution-inner">
+      <div>
+        <span class="section-label section-label--green">The Solution</span>
+        <h2 class="section-title">One Platform.<br>Complete Control.</h2>
+        <p class="section-sub" style="margin-bottom:40px;">ClearClaim brings every part of the valuation and invoice lifecycle into a single, intelligent workflow — from first submission to final payment.</p>
+        <div class="solution-points">
+          <div class="solution-point fade-in">
+            <div class="solution-point-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#2563eb" stroke-width="1.8"/><path d="M7 12H17M7 8H17M7 16H13" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <h3>Centralised Submission & Tracking</h3>
+              <p style="font-size:14px;color:var(--grey-text)">Every claim, invoice and valuation in one place. Real-time status for all parties — subcontractor to accounts.</p>
+            </div>
+          </div>
+          <div class="solution-point fade-in fade-in-delay-1">
+            <div class="solution-point-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 12L7 16L21 4" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <h3>Structured Approval Workflow</h3>
+              <p style="font-size:14px;color:var(--grey-text)">Submit → Review → Approve → Pay. Every step is tracked, auditable and moves at speed.</p>
+            </div>
+          </div>
+          <div class="solution-point fade-in fade-in-delay-2">
+            <div class="solution-point-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 5 5 5 9C5 13 8 16 12 16C16 16 19 13 19 9C19 5 16 2 12 2Z" stroke="#2563eb" stroke-width="1.8"/><path d="M8.5 9L10.5 11L15.5 6.5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20C5 20 7 17 12 17C17 17 19 20 19 20" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <h3>AI Duplicate Detection at Every Stage</h3>
+              <p style="font-size:14px;color:var(--grey-text)">Our AI analyses every claim against the full project history — catching duplicates, re-claims and over-charges automatically.</p>
+            </div>
+          </div>
+          <div class="solution-point fade-in fade-in-delay-3">
+            <div class="solution-point-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 5H7C5.9 5 5 5.9 5 7V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V7C19 5.9 18.1 5 17 5H15" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="#2563eb" stroke-width="1.8"/><path d="M9 12H15M9 16H12" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <h3>Full Audit Trail & Version History</h3>
+              <p style="font-size:14px;color:var(--grey-text)">Every change, query, approval and rejection is logged. Complete traceability for disputes, audits and compliance.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Solution Visual -->
+      <div class="solution-visual fade-in">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px;">Live Project View</div>
+        <div class="workflow-mini">
+          <div class="workflow-mini-step">
+            <div class="workflow-mini-num">1</div>
+            <div>
+              <div class="workflow-mini-text">Claim Submitted</div>
+              <div class="workflow-mini-sub">VC-2847 · Steelwork Package · £34,450</div>
+            </div>
+            <div style="margin-left:auto;"><span class="workflow-mini-tag tag-green" style="background:rgba(16,185,129,.15);color:#6ee7b7;font-size:10px;padding:3px 8px;border-radius:999px;font-weight:600;">✓ Done</span></div>
+          </div>
+          <div class="workflow-mini-connector"></div>
+          <div class="workflow-mini-step" style="border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)">
+            <div class="workflow-mini-num" style="background:#f59e0b">!</div>
+            <div>
+              <div class="workflow-mini-text">AI Review In Progress</div>
+              <div class="workflow-mini-sub">Duplicate flagged — awaiting QS action</div>
+            </div>
+            <div style="margin-left:auto;"><span style="background:rgba(245,158,11,.2);color:#fbbf24;font-size:10px;padding:3px 8px;border-radius:999px;font-weight:600;">⚡ Alert</span></div>
+          </div>
+          <div class="workflow-mini-connector"></div>
+          <div class="workflow-mini-step" style="opacity:.5">
+            <div class="workflow-mini-num" style="background:rgba(255,255,255,.1)">3</div>
+            <div>
+              <div class="workflow-mini-text">Compliance Check</div>
+              <div class="workflow-mini-sub">VAT / CIS / DRC validation</div>
+            </div>
+          </div>
+          <div class="workflow-mini-connector"></div>
+          <div class="workflow-mini-step" style="opacity:.5">
+            <div class="workflow-mini-num" style="background:rgba(255,255,255,.1)">4</div>
+            <div>
+              <div class="workflow-mini-text">Payment Approved</div>
+              <div class="workflow-mini-sub">Awaiting completion</div>
+            </div>
+          </div>
+        </div>
+        <div class="solution-visual-badge">
+          🛡️ Protected by AI
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="section section--grey" id="features">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">Platform Features</span>
+      <h2 class="section-title">Everything You Need.<br>Nothing You Don't.</h2>
+      <p class="section-sub section-sub--center">Built specifically for UK construction finance — from the ground up.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon feature-icon--blue">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M8 6H6C4.9 6 4 6.9 4 8V20C4 21.1 4.9 22 6 22H20C21.1 22 22 21.1 22 20V8C22 6.9 21.1 6 20 6H18" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="4" width="8" height="4" rx="1.5" stroke="#2563eb" stroke-width="1.8"/><path d="M9 13H17M9 17H14" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Smart Submissions</h3>
+        <p>Upload invoices and valuations with supporting attachments. Tag line items to cost codes, work packages and purchase orders automatically.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-1">
+        <div class="feature-icon feature-icon--green">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="10" r="6" stroke="#10b981" stroke-width="1.8"/><path d="M9.5 10L11.5 12L16.5 7" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 20C6 17.8 9.1 16 13 16C16.9 16 20 17.8 20 20" stroke="#10b981" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3>AI Duplicate Detection</h3>
+        <p>Catches duplicates, re-claims, evidence reuse and over-claims before they're approved. Explainable alerts show exactly what was found and why.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-2">
+        <div class="feature-icon feature-icon--purple">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="4" width="18" height="18" rx="3" stroke="#7c3aed" stroke-width="1.8"/><path d="M9 13L11.5 15.5L17 10" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>QS Review & Approval</h3>
+        <p>Built-in query workflow for QS teams. Raise, track and resolve queries. Approve, partially certify or reject with full commentary and evidence logging.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-1">
+        <div class="feature-icon feature-icon--orange">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="#f59e0b" stroke-width="1.8"/><rect x="14" y="4" width="8" height="8" rx="1.5" stroke="#f59e0b" stroke-width="1.8"/><rect x="4" y="14" width="8" height="8" rx="1.5" stroke="#f59e0b" stroke-width="1.8"/><rect x="14" y="14" width="8" height="8" rx="1.5" stroke="#f59e0b" stroke-width="1.8"/></svg>
+        </div>
+        <h3>Flexible Structure</h3>
+        <p>Model any project structure with cost codes, work packages and purchase orders. Supports complex multi-package contracts across unlimited subcontractors.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-2">
+        <div class="feature-icon feature-icon--teal">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 3L4 7.5V13C4 17.7 8 22 13 23.5C18 22 22 17.7 22 13V7.5L13 3Z" stroke="#0d9488" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 13L11.5 15L16.5 10" stroke="#0d9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Compliance Engine</h3>
+        <p>Automated VAT, CIS and Domestic Reverse Charge checks built into every approval. Stay compliant with HMRC rules without the manual overhead.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-3">
+        <div class="feature-icon feature-icon--navy">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M5 8C5 6.3 6.3 5 8 5H18C19.7 5 21 6.3 21 8V18C21 19.7 19.7 21 18 21H8C6.3 21 5 19.7 5 18V8Z" stroke="#1d4ed8" stroke-width="1.8"/><path d="M9 12H13M9 16H17M9 8H17" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Audit & History</h3>
+        <p>Immutable log of every submission, change, approval, rejection and query. Timestamped, user-attributed and exportable for disputes or external audits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== AI SECTION ===== -->
+<section class="section section--dark" id="ai">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label section-label--white">AI Intelligence</span>
+      <h2 class="section-title">AI That Thinks Like<br>a Quantity Surveyor</h2>
+      <p class="section-sub section-sub--center" style="color:rgba(255,255,255,.65)">Our AI doesn't just pattern-match. It understands construction claims — the language, the structure, the evidence — and flags what a seasoned QS would question.</p>
+    </div>
+    <div class="ai-grid">
+      <div class="ai-capabilities">
+        <div class="ai-cap fade-in">
+          <div class="ai-cap-icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 6H19M3 11H19M3 16H13" stroke="#10b981" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="16" r="3" stroke="#10b981" stroke-width="1.5"/></svg>
+          </div>
+          <div>
+            <h3>Text & Numeric Similarity</h3>
+            <p>Detects the same work described differently across claims. "Structural beams Level 3" and "L3 steel beam installation" — our AI recognises them as one.</p>
+          </div>
+        </div>
+        <div class="ai-cap fade-in fade-in-delay-1">
+          <div class="ai-cap-icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="#10b981" stroke-width="1.8"/><rect x="12" y="3" width="7" height="9" rx="1.5" stroke="#10b981" stroke-width="1.8"/><path d="M3 16H19M7 19H15" stroke="#10b981" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <h3>Document Fingerprinting</h3>
+            <p>Flags when photos, PDFs and other supporting evidence have been reused across different claims — a common fraud vector caught automatically.</p>
+          </div>
+        </div>
+        <div class="ai-cap fade-in fade-in-delay-2">
+          <div class="ai-cap-icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2L3 6V11C3 15.4 6.6 19.6 11 21C15.4 19.6 19 15.4 19 11V6L11 2Z" stroke="#10b981" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11L10 13L14 9" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <h3>Explainable Alerts</h3>
+            <p>Every flag comes with a side-by-side comparison and clear reasoning. QS teams can make informed decisions — not just dismiss alerts blind.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Alert UI Mock -->
+      <div class="ai-alert-mock fade-in fade-in-delay-1">
+        <div class="ai-alert-mock-header">
+          <div class="ai-pulse"></div>
+          AI Duplicate Analysis
+          <span class="ai-alert-chip">⚠ 87% Match</span>
+        </div>
+
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px;">Comparing claim VC-2847 against project history:</div>
+
+        <div class="ai-compare">
+          <div class="ai-compare-side">
+            <div class="ai-compare-label">Current Claim</div>
+            <div class="ai-compare-item">
+              <div><strong>VC-2847</strong> · Line 3</div>
+              <div style="margin-top:4px">"Beam installation — <strong>grid A-D</strong>"</div>
+              <div style="margin-top:4px">Cost code: <strong>STL-003B</strong></div>
+              <div style="margin-top:4px">Value: <strong>£11,400</strong></div>
+            </div>
+          </div>
+          <div class="ai-compare-side">
+            <div class="ai-compare-label">Previous Claim</div>
+            <div class="ai-compare-item">
+              <div><strong>VC-2741</strong> · Line 1</div>
+              <div style="margin-top:4px">"Structural steelwork — <strong>Grids A to D</strong>"</div>
+              <div style="margin-top:4px">Cost code: <strong>STL-003</strong></div>
+              <div style="margin-top:4px">Value: <strong>£11,400</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ai-match-bar">
+          <div class="ai-match-label">
+            <span>Similarity Score</span>
+            <span style="color:#6ee7b7;font-weight:700;">87% — High Risk</span>
+          </div>
+          <div class="ai-match-track">
+            <div class="ai-match-fill"></div>
+          </div>
+        </div>
+
+        <div class="ai-flag-row">
+          <div class="ai-flag">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Identical amount
+          </div>
+          <div class="ai-flag">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Same work area
+          </div>
+          <div class="ai-flag">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Text semantic match
+          </div>
+          <div class="ai-flag">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Photo reused
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button style="flex:1;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">Not a Duplicate</button>
+          <button style="flex:1;background:#ef4444;color:white;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">Reject This Line →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== WORKFLOW ===== -->
+<section class="section" id="workflow">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">How It Works</span>
+      <h2 class="section-title">From Submission to Payment<br>in 4 Steps</h2>
+      <p class="section-sub section-sub--center">A clear, structured process that every stakeholder understands — with AI working behind the scenes at every stage.</p>
+    </div>
+    <div class="workflow-steps">
+      <div class="workflow-step fade-in">
+        <div class="workflow-step-circle">1</div>
+        <h3>Submit Claim</h3>
+        <p>Subcontractor uploads their valuation or invoice with supporting attachments, cost code tags and work package references.</p>
+        <span class="workflow-step-tag tag-blue">Subcontractor</span>
+      </div>
+      <div class="workflow-step fade-in fade-in-delay-1">
+        <div class="workflow-step-circle">2</div>
+        <h3>AI Review</h3>
+        <p>ClearClaim AI instantly scans the claim against all previous submissions, flagging any duplicates, re-claims or anomalies for the QS to review.</p>
+        <span class="workflow-step-tag tag-green">AI + QS</span>
+      </div>
+      <div class="workflow-step fade-in fade-in-delay-2">
+        <div class="workflow-step-circle">3</div>
+        <h3>Compliance Check</h3>
+        <p>Accounts team validates VAT, CIS and DRC treatment. Automated checks surface any issues before approval — reducing penalty risk.</p>
+        <span class="workflow-step-tag tag-blue">Accounts</span>
+      </div>
+      <div class="workflow-step fade-in fade-in-delay-3">
+        <div class="workflow-step-circle" style="border-color:var(--green);">4</div>
+        <h3>Approve & Pay</h3>
+        <p>Certified amount is approved, payment instruction issued and the full audit trail is locked. Clean, fast and fully documented.</p>
+        <span class="workflow-step-tag tag-green">Finance</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BENEFITS ===== -->
+<section class="section section--grey" id="benefits">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">The Results</span>
+      <h2 class="section-title">Real Impact, Measurable Results</h2>
+      <p class="section-sub section-sub--center">Construction teams using ClearClaim see dramatic improvements from the moment they go live.</p>
+    </div>
+    <div class="benefits-grid">
+      <div class="benefit-card fade-in">
+        <div class="benefit-stat count-up" data-target="40" data-suffix="% faster">40%</div>
+        <div class="benefit-label">Faster approval cycles from submission to certified payment</div>
+      </div>
+      <div class="benefit-card fade-in fade-in-delay-1">
+        <div class="benefit-stat green">£0</div>
+        <div class="benefit-label">Duplicate payments slipping through your AI-protected workflow</div>
+      </div>
+      <div class="benefit-card fade-in fade-in-delay-2">
+        <div class="benefit-stat count-up" data-target="100" data-suffix="%">100%</div>
+        <div class="benefit-label">Audit trail coverage on every claim, change and approval</div>
+      </div>
+      <div class="benefit-card fade-in fade-in-delay-3">
+        <div class="benefit-stat green count-up" data-target="60" data-suffix="%">60%</div>
+        <div class="benefit-label">Reduction in payment disputes and subcontractor queries</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== INTEGRATIONS ===== -->
+<section class="section" id="integrations">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">Integrations</span>
+      <h2 class="section-title">Connects With Your<br>Existing Systems</h2>
+      <p class="section-sub section-sub--center">ClearClaim fits into your existing finance stack — no rip-and-replace required.</p>
+    </div>
+    <div class="integrations-logos">
+      <div class="integration-chip">
+        <div class="chip-dot" style="background:#00B050"></div>
+        <span style="color:#00853e">Sage</span>
+        <span style="font-size:12px;color:var(--grey-text);font-weight:400;">Accounting</span>
+      </div>
+      <div class="integration-chip">
+        <div class="chip-dot" style="background:#13B5EA"></div>
+        <span style="color:#13B5EA">Xero</span>
+        <span style="font-size:12px;color:var(--grey-text);font-weight:400;">Cloud Finance</span>
+      </div>
+      <div class="integration-chip">
+        <div class="chip-dot" style="background:#e31837"></div>
+        <span style="color:#e31837">COINS</span>
+        <span style="font-size:12px;color:var(--grey-text);font-weight:400;">Construction ERP</span>
+      </div>
+    </div>
+    <div class="coming-soon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M8 5V8L10 10" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+      More integrations coming soon — Procore, Viewpoint, Oracle Primavera
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section class="section section--grey" id="pricing">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">Pricing</span>
+      <h2 class="section-title">Transparent Pricing,<br>No Hidden Costs</h2>
+      <p class="section-sub section-sub--center">All plans include onboarding, UK support and free data migration. Cancel any time.</p>
+    </div>
+    <div class="pricing-grid">
+
+      <!-- Starter -->
+      <div class="pricing-card fade-in">
+        <div class="pricing-tier">Starter</div>
+        <div class="pricing-price">
+          <span class="pricing-amount">£149</span>
+          <span class="pricing-period">/month</span>
+        </div>
+        <div class="pricing-users">Up to 5 users · Billed annually</div>
+        <div class="pricing-features">
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Smart submission portal
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Basic AI duplicate detection
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Standard approval workflow
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Audit trail (12 months)
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Email support
+          </div>
+        </div>
+        <a href="#cta" class="btn btn-secondary pricing-cta">Get Started</a>
+      </div>
+
+      <!-- Professional (Featured) -->
+      <div class="pricing-card pricing-card--featured fade-in fade-in-delay-1" style="margin-top:-16px;padding-top:52px;">
+        <div class="pricing-featured-badge">⭐ Most Popular</div>
+        <div class="pricing-tier" style="color:var(--blue)">Professional</div>
+        <div class="pricing-price">
+          <span class="pricing-amount">£399</span>
+          <span class="pricing-period">/month</span>
+        </div>
+        <div class="pricing-users">Up to 25 users · Billed annually</div>
+        <div class="pricing-features">
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Everything in Starter
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <strong>Full AI suite</strong> — fingerprinting & similarity
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <strong>Compliance engine</strong> — VAT, CIS, DRC
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Sage, Xero & COINS integrations
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Unlimited audit history
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Priority UK phone & email support
+          </div>
+        </div>
+        <a href="#cta" class="btn btn-primary pricing-cta">Book a Demo</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card fade-in fade-in-delay-2">
+        <div class="pricing-tier">Enterprise</div>
+        <div class="pricing-price">
+          <span class="pricing-custom">Custom</span>
+        </div>
+        <div class="pricing-users">Unlimited users · Flexible billing</div>
+        <div class="pricing-features">
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Everything in Professional
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Dedicated Customer Success Manager
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Custom integrations & API access
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            SSO / SAML / Active Directory
+          </div>
+          <div class="pricing-feature">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            SLA guarantees & 24/7 support
+          </div>
+        </div>
+        <a href="#cta" class="btn btn-secondary pricing-cta">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-inner">
+      <div class="text-center">
+        <span class="section-label section-label--white">Get Started</span>
+      </div>
+      <h2 class="cta-title">Ready to Eliminate<br><span>Duplicate Claims?</span></h2>
+      <p class="cta-sub">Join UK construction teams already using ClearClaim to protect their payments and accelerate approvals.</p>
+      <div class="cta-actions">
+        <a href="#" class="btn btn-primary btn-lg">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="11" rx="2" stroke="white" stroke-width="1.5"/><path d="M5 4V3C5 2.4 5.4 2 6 2H12C12.6 2 13 2.4 13 3V4" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Book a Demo
+        </a>
+        <a href="#" class="btn btn-secondary btn-secondary--white btn-lg">Start Free Trial</a>
+      </div>
+      <div class="cta-trust">
+        <div class="cta-trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          No credit card required
+        </div>
+        <div class="cta-trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          UK-based support
+        </div>
+        <div class="cta-trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          GDPR compliant
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="logo-icon" style="background:rgba(255,255,255,.1)">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 1.5L3 4.5V9.5C3 13.4 6.1 17.1 10 18.5C13.9 17.1 17 13.4 17 9.5V4.5L10 1.5Z" fill="white" fill-opacity="0.1" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M7 10L9.2 12.2L13.5 7.5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          ClearClaim
+        </div>
+        <p class="footer-tagline">The intelligent platform for UK construction invoice and valuation management. Built to stop duplicate claims and accelerate payment.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#ai">AI Detection</a></li>
+          <li><a href="#integrations">Integrations</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Partners</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">GDPR</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+          <li><a href="#">Security</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 ClearClaim Ltd. Built for UK Construction.</p>
+      <p style="color:rgba(255,255,255,.3)">Company No. 12345678 · Registered in England & Wales</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Mobile nav toggle
+  function toggleMobileNav() {
+    document.getElementById('mobileNav').classList.toggle('open');
+  }
+
+  // Intersection Observer for fade-in animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // Solution points observer
+  const solutionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.solution-point').forEach(el => solutionObserver.observe(el));
+
+  // Smooth counter animation for benefit stats
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    const duration = 1800;
+    const start = performance.now();
+
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.target.dataset.target) {
+        animateCounter(entry.target);
+        counterObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('[data-target]').forEach(el => counterObserver.observe(el));
+
+  // Staggered card animation
+  const cardObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }, i * 80);
+        cardObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  // Apply stagger to grids
+  document.querySelectorAll('.problem-card, .feature-card, .benefit-card, .pricing-card').forEach(card => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    card.style.transition = 'opacity .5s ease, transform .5s ease';
+    cardObserver.observe(card);
+  });
+</script>
+</body>
+</html>

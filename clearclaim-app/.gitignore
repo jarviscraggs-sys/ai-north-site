@@ -42,3 +42,6 @@ next-env.d.ts
 clearclaim.db
 public/uploads/
 public/project-docs/
+../mission-control/
+../price-comparison/
+../savvychef-landing/

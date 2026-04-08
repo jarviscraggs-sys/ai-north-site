@@ -5,8 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/startup.js && next start -p ${PORT:-3000}",
+    "lint": "next lint",
     "seed": "npx tsx scripts/seed.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -16,10 +20,11 @@
     "better-sqlite3": "^12.8.0",
     "next": "16.2.2",
     "next-auth": "^5.0.0-beta.30",
-    "nodemailer": "^8.0.4",
+    "nodemailer": "^6.10.1",
     "pdf-lib": "^1.17.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "resend": "^6.10.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

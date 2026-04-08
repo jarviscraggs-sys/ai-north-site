@@ -1,40 +1,11 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Email transporter — uses Ethereal for dev/demo (no real emails, shows preview URL in console)
-let transporter: nodemailer.Transporter | null = null;
+const FROM_EMAIL = process.env.EMAIL_FROM || 'ClearClaim <noreply@getclearclaim.co.uk>';
 
-async function getTransporter() {
-  if (transporter) return transporter;
-
-  // If real SMTP config provided, use it
-  if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-    return transporter;
-  }
-
-  // Default: Ethereal (test mode) — auto-creates a disposable account
-  const testAccount = await nodemailer.createTestAccount();
-  console.log('📧 [ClearClaim Email] Using Ethereal test account:', testAccount.user);
-
-  transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  });
-
-  return transporter;
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY not set');
+  return new Resend(key);
 }
 
 interface SendEmailOptions {
@@ -45,35 +16,31 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, html, attachments }: SendEmailOptions) {
-  const transport = await getTransporter();
-
   const recipients = Array.isArray(to) ? to : [to];
   const validRecipients = recipients.filter(Boolean);
   if (validRecipients.length === 0) return;
 
   try {
-    const info = await transport.sendMail({
-      from: '"ClearClaim" <noreply@getclearclaim.co.uk>',
-      to: validRecipients.join(', '),
+    const resend = getResend();
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: validRecipients,
       subject,
       html,
       attachments: attachments?.map(a => ({
         filename: a.filename,
-        content: Buffer.from(a.content),
-        contentType: a.contentType,
+        content: Buffer.from(a.content).toString('base64'),
+        content_type: a.contentType,
       })),
     });
 
-    console.log('📧 [ClearClaim Email] Sent:', subject);
-    console.log('📧 [ClearClaim Email] Recipients:', validRecipients.join(', '));
-
-    // Show Ethereal preview URL for testing
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-      console.log('📧 [ClearClaim Email] Preview URL (Ethereal):', previewUrl);
+    if (error) {
+      console.error('📧 [ClearClaim Email] Resend error:', error);
+      return null;
     }
 
-    return info;
+    console.log('📧 [ClearClaim Email] Sent via Resend:', subject, '→', validRecipients.join(', '), '| ID:', data?.id);
+    return data;
   } catch (err) {
     console.error('📧 [ClearClaim Email] Failed to send:', err);
   }

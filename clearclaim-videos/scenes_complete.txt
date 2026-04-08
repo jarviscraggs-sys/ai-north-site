@@ -1,0 +1,43 @@
+ClearClaim Marketing Video - Scene Generation Summary
+============================================================
+
+File: scene1_contractor_desk.png
+Status: already_done
+URL: N/A
+
+File: scene2_spreadsheet_chaos.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/c6ebd28c-a7ff-4f83-9823-3405c372250a.png
+
+File: scene3_whatsapp_chaos.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/7ed8122f-f238-44d0-98d7-217220913aca.png
+
+File: scene4_missed_retention.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/936800f1-65ac-433e-8239-81ca385997c8.png
+
+File: scene5_clearclaim_dashboard.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/62794364-d4e5-4371-a834-a34ed4015679.png
+
+File: scene6_invoice_approval.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/ffa24d12-1088-47ae-9720-b8b920075f23.png
+
+File: scene7_cis_calculation.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/16b638d4-fec2-46df-b443-50c875e02d19.png
+
+File: scene8_timesheet.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/8a5ad443-2463-4006-bed0-1512dc05ab14.png
+
+File: scene9_team_calendar.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/48f096d7-bf81-4d9c-8d66-084ddf71474a.png
+
+File: scene10_cta.png
+Status: success
+URL: https://d3u0tzju9qaucj.cloudfront.net/fd376d48-6421-495c-be03-8beb67d1c8f7/7b707937-bb9c-4cc0-919f-48d65fc7c033.png
+

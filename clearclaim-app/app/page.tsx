@@ -19,6 +19,12 @@ export default function HomePage() {
           {/* Nav actions */}
           <div className="flex items-center gap-3">
             <Link
+              href="/demo"
+              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-white/70 transition hover:text-white sm:block"
+            >
+              Demo
+            </Link>
+            <Link
               href="/pricing"
               className="hidden rounded-lg px-4 py-2 text-sm font-medium text-white/70 transition hover:text-white sm:block"
             >

@@ -1,0 +1,15 @@
+ClearClaim Marketing Video Clips
+=================================
+
+Generated: 8 clips
+Failed: 0 clips
+
+Successfully generated:
+  - v1_contractor_stress.mp4
+  - v2_spreadsheet_chaos.mp4
+  - v3_phone_messages.mp4
+  - v4_clearclaim_dashboard.mp4
+  - v5_invoice_approval.mp4
+  - v6_cis_report.mp4
+  - v7_construction_site.mp4
+  - v8_team_working.mp4

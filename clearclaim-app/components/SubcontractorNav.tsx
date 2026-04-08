@@ -73,7 +73,7 @@ export default function SubcontractorNav({ user }: { user?: any }) {
             {initial}
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={async () => { await signOut({ redirect: false }); window.location.href = '/login'; }}
             className="text-xs text-blue-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition"
           >
             Sign out

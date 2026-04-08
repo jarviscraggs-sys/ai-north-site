@@ -4,6 +4,20 @@ import bcrypt from 'bcryptjs';
 import { getDb } from './db';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
+  useSecureCookies: process.env.NODE_ENV === 'production',
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+
   providers: [
     Credentials({
       name: 'credentials',
@@ -60,7 +74,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: '/login',
+    signOut: '/login',
+    error: '/login',
   },
-  secret: process.env.NEXTAUTH_SECRET || 'clearclaim-secret-key-for-dev-only',
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'clearclaim-dev-secret',
   session: { strategy: 'jwt' },
 });

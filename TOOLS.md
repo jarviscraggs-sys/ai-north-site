@@ -20,13 +20,31 @@ Skills define _how_ tools work. This file is for _your_ specifics — the stuff 
 - API Key: `re_WWaahq8R_EciifbiMorBF9WMH8kTpMRup`
 
 ## OpenAI
-- API Key: `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`
+- API Key: `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`
 
 ## Advanced Peptides Bot
 - Telegram Token: `8601923621:AAGfk0J1FaBHZ_lWSFYCkTpm3YhpHamxZTw`
 - Bot file: `/Users/jarvis/.openclaw/workspace/peptide-bot/bot.py`
 - Data file: `/Users/jarvis/.openclaw/workspace/peptide-bot/data.json`
 - Model: GPT-4o-mini
+
+## Supabase (GlucoMind)
+- Project Ref: mugyqmcisdpsypeylooU
+- URL: https://mugyqmcisdpsypeylooU.supabase.co
+- Secret Key: sb_secret_9ceD76DTNEPu_czwn4WYCg_FtHFhWWo
+- Anon Key: eyJhbG…9nYA (legacy JWT format)
+- Region: eu-west-2 (London)
+- Account: GitHub login (jarviscraggs-sys)
+
+## Dexcom API (GlucoMind)
+- Client ID: `oulQCboievxUTiefZYua65910YuvUSsu`
+- Client Secret: `Y3bqlGyMWQ4AwJt6`
+- Redirect URI: `https://localhost:3050/auth/callback`
+- Sandbox Base URL: `https://sandbox-api.dexcom.com`
+- Production Base URL: `https://api.dexcom.com`
+- Auth URL: `https://sandbox-api.dexcom.com/v2/oauth2/login`
+- Token URL: `https://sandbox-api.dexcom.com/v2/oauth2/token`
+- Access Level: Sandbox
 
 ## What Goes Here
 

@@ -27,6 +27,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (user.role === 'subcontractor' && String(invoice.subcontractor_id) !== String(user.id)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
+  if (user.role === 'contractor' && invoice.contractor_id && Number(invoice.contractor_id) !== Number(user.id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const attachments = db.prepare('SELECT * FROM attachments WHERE invoice_id = ?').all(id);
   const jobLines = db.prepare('SELECT * FROM invoice_lines WHERE invoice_id = ? ORDER BY id').all(id);

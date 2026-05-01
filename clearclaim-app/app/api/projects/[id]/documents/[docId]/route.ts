@@ -25,7 +25,10 @@ export async function DELETE(
 
   // Delete file from disk
   try {
-    const filePath = path.join(process.cwd(), 'public', doc.file_path);
+    const normalizedPath = String(doc.file_path || '')
+      .replace(/^\/+/, '')
+      .replace(/^uploads[\\/]+/, '');
+    const filePath = path.join(process.cwd(), 'uploads', normalizedPath);
     await unlink(filePath);
   } catch {
     // File might not exist on disk; continue

@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = session.user as any;
 
   const { searchParams } = req.nextUrl;
   const month = parseInt(searchParams.get('month') || `${new Date().getMonth() + 1}`);
@@ -29,11 +30,12 @@ export async function GET(req: NextRequest) {
     FROM invoices i
     JOIN users u ON i.subcontractor_id = u.id
     WHERE i.status = 'approved'
+      AND i.contractor_id = ?
       AND strftime('%m', COALESCE(i.reviewed_at, i.submitted_at)) = printf('%02d', ?)
       AND strftime('%Y', COALESCE(i.reviewed_at, i.submitted_at)) = ?
     GROUP BY u.id
     ORDER BY u.company, u.name
-  `).all(month, String(year)) as any[];
+  `).all(user.id, month, String(year)) as any[];
 
   // Also get UTR from users table if available
   // (we'll just use what we have)

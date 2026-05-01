@@ -19,7 +19,11 @@ export async function GET(req: NextRequest) {
   let args: any[];
 
   if (user.role === 'employee') {
-    query = `SELECT t.*, e.name as employee_name, p.name as project_name
+    query = `SELECT t.*,
+                    e.name as employee_name,
+                    e.role as employee_role,
+                    e.hourly_rate as employee_hourly_rate,
+                    p.name as project_name
              FROM timesheets t
              LEFT JOIN employees e ON e.id = t.employee_id
              LEFT JOIN projects p ON p.id = t.project_id
@@ -28,7 +32,11 @@ export async function GET(req: NextRequest) {
     if (status) { query += ` AND t.status = ?`; args.push(status); }
     query += ' ORDER BY t.week_starting DESC';
   } else if (user.role === 'contractor') {
-    query = `SELECT t.*, e.name as employee_name, p.name as project_name
+    query = `SELECT t.*,
+                    e.name as employee_name,
+                    e.role as employee_role,
+                    e.hourly_rate as employee_hourly_rate,
+                    p.name as project_name
              FROM timesheets t
              LEFT JOIN employees e ON e.id = t.employee_id
              LEFT JOIN projects p ON p.id = t.project_id

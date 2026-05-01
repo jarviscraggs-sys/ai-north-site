@@ -122,8 +122,8 @@ export default function EditInvoiceForm({
 
       setSuccess(true);
       setTimeout(() => router.push(`/subcontractor/invoice/${invoiceId}`), 2500);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

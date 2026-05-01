@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
 
     // Generate token
     const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    // Use SQLite-compatible datetime format (space not T, no Z)
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
 
     // Invalidate any existing unused invites for this email
     db.prepare('UPDATE invites SET used = 1 WHERE email = ? AND used = 0').run(email);
@@ -83,7 +84,8 @@ export async function GET(req: NextRequest) {
   if (token) {
     // Validate a specific token (for registration page)
     const invite = db.prepare(`
-      SELECT * FROM invites WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+      SELECT * FROM invites WHERE token = ? AND used = 0 
+      AND (expires_at > datetime('now') OR expires_at > strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
     `).get(token) as any;
     if (!invite) return NextResponse.json({ error: 'Invalid or expired invite' }, { status: 404 });
     return NextResponse.json({ invite });

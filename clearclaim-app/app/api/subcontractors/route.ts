@@ -20,11 +20,12 @@ export async function GET(req: NextRequest) {
       SUM(CASE WHEN i.status = 'queried' THEN 1 ELSE 0 END) as queried_count,
       SUM(CASE WHEN i.status = 'approved' THEN i.amount ELSE 0 END) as total_approved_value
     FROM users u
-    LEFT JOIN invoices i ON u.id = i.subcontractor_id
+    JOIN subcontractor_contractors sc ON sc.subcontractor_id = u.id AND sc.contractor_id = ?
+    LEFT JOIN invoices i ON u.id = i.subcontractor_id AND i.contractor_id = ?
     WHERE u.role = 'subcontractor'
     GROUP BY u.id
     ORDER BY u.company
-  `).all();
+  `).all(user.id, user.id);
 
   return NextResponse.json({ subcontractors });
 }

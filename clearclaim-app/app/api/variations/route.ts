@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
       ORDER BY v.submitted_at DESC
     `).all(user.id);
   } else if (user.role === 'contractor') {
-    const contractor = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id) as any;
     variations = db.prepare(`
       SELECT v.*, p.name as project_name, u.name as subcontractor_name, u.company as subcontractor_company
       FROM variations v
@@ -27,7 +26,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN users u ON v.subcontractor_id = u.id
       WHERE v.contractor_id = ?
       ORDER BY v.submitted_at DESC
-    `).all(contractor.id);
+    `).all(user.id);
   } else {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

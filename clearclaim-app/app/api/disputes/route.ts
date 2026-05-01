@@ -41,7 +41,6 @@ export async function POST(req: NextRequest) {
       const invoice = db.prepare('SELECT * FROM invoices WHERE id = ? AND subcontractor_id = ?').get(invoice_id, user.id) as any;
       if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
       subcontractor_id = user.id;
-      const contractor = db.prepare("SELECT * FROM users WHERE role = 'contractor' LIMIT 1").get() as any;
       const paymentDue = new Date(invoice.submitted_at);
       paymentDue.setDate(paymentDue.getDate() + 30);
       const payLessDeadline = new Date(paymentDue);
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
       const result = db.prepare(`
         INSERT INTO disputes (invoice_id, raised_by, contractor_id, subcontractor_id, dispute_type, description, amount_disputed, payment_due_date, pay_less_notice_date)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(invoice_id, user.id, contractor?.id || 1, user.id, dispute_type || 'payment', description, amount_disputed || invoice.amount, paymentDue.toISOString().split('T')[0], payLessDeadline.toISOString().split('T')[0]);
+      `).run(invoice_id, user.id, invoice.contractor_id, user.id, dispute_type || 'payment', description, amount_disputed || invoice.amount, paymentDue.toISOString().split('T')[0], payLessDeadline.toISOString().split('T')[0]);
       db.prepare('INSERT INTO dispute_timeline (dispute_id, user_id, user_name, action, detail) VALUES (?, ?, ?, ?, ?)').run(result.lastInsertRowid, user.id, user.name || user.email, 'Dispute Raised', `Raised by subcontractor: ${description}`);
       return NextResponse.json({ success: true, id: result.lastInsertRowid });
     }

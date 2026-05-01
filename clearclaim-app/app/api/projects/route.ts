@@ -8,9 +8,19 @@ export async function GET(req: NextRequest) {
   const user = session.user as any;
   const db = getDb();
 
-  const contractor = user.role === 'contractor'
-    ? db.prepare('SELECT * FROM users WHERE id = ?').get(user.id) as any
-    : db.prepare(`SELECT * FROM users WHERE role = 'contractor' LIMIT 1`).get() as any;
+  let contractor: any;
+  if (user.role === 'contractor') {
+    contractor = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+  } else {
+    // For subcontractors - find their linked contractor via subcontractor_contractors
+    const link = db.prepare(`
+      SELECT u.* FROM subcontractor_contractors sc
+      JOIN users u ON u.id = sc.contractor_id
+      WHERE sc.subcontractor_id = ?
+      LIMIT 1
+    `).get(user.id);
+    contractor = link;
+  }
 
   if (!contractor) return NextResponse.json({ projects: [] });
 

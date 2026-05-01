@@ -65,7 +65,10 @@ export async function generateInvoicePDF(invoice: InvoiceData, jobLines: JobLine
   let logoEmbedded = false;
   if (invoice.contractor_logo_path) {
     try {
-      const logoAbsPath = path.join(process.cwd(), 'public', invoice.contractor_logo_path.replace(/^\//, ''));
+      const normalizedPath = invoice.contractor_logo_path
+        .replace(/^\/+/, '')
+        .replace(/^uploads[\\/]+/, '');
+      const logoAbsPath = path.join(process.cwd(), 'uploads', normalizedPath);
       const logoBytes = await readFile(logoAbsPath);
       const logoType = invoice.contractor_logo_path.toLowerCase();
       let embeddedLogo;

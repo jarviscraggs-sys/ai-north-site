@@ -351,7 +351,7 @@ export default function ContractorInvoiceActions({
                 {attachments.map((att) => (
                   <a
                     key={att.id}
-                    href={att.file_path}
+                    href={`/api/files?path=${encodeURIComponent(att.file_path)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition"

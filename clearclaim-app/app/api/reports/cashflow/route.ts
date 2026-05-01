@@ -20,10 +20,11 @@ export async function GET(req: NextRequest) {
     FROM invoices i
     JOIN users u ON i.subcontractor_id = u.id
     WHERE i.status = 'approved'
+      AND i.contractor_id = ?
       AND (i.paid = 0 OR i.paid IS NULL)
       AND i.reviewed_at IS NOT NULL
     ORDER BY expected_payment_date ASC
-  `).all() as any[];
+  `).all(user.id) as any[];
 
   // Retention schedule
   const retentionSchedule = db.prepare(`
@@ -34,9 +35,10 @@ export async function GET(req: NextRequest) {
     FROM invoices i
     JOIN users u ON i.subcontractor_id = u.id
     WHERE i.retention_amount > 0
+      AND i.contractor_id = ?
       AND i.retention_release_date IS NOT NULL
     ORDER BY i.retention_release_date ASC
-  `).all() as any[];
+  `).all(user.id) as any[];
 
   // Summary calculations
   const now = new Date();

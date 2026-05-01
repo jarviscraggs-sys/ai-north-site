@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = session.user as any;
 
   const db = getDb();
   const { searchParams } = new URL(req.url);
@@ -12,8 +13,8 @@ export async function GET(req: NextRequest) {
   const action = searchParams.get('action');
   const limit = parseInt(searchParams.get('limit') || '100');
 
-  let query = `SELECT * FROM audit_log WHERE 1=1`;
-  const params: any[] = [];
+  let query = `SELECT * FROM audit_log WHERE contractor_id = ?`;
+  const params: any[] = [user.id];
 
   if (invoiceId) {
     query += ` AND invoice_id = ?`;

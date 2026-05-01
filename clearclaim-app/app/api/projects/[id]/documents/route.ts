@@ -52,13 +52,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const description = (formData.get('description') as string) || null;
 
   const safeFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-  const uploadDir = path.join(process.cwd(), 'public', 'project-docs', id);
+  const uploadDir = path.join(process.cwd(), 'uploads', 'project-docs', id);
   await mkdir(uploadDir, { recursive: true });
   const filePath = path.join(uploadDir, safeFilename);
   const bytes = await file.arrayBuffer();
   await writeFile(filePath, Buffer.from(bytes));
 
-  const dbPath = `/project-docs/${id}/${safeFilename}`;
+  const dbPath = `uploads/project-docs/${id}/${safeFilename}`;
 
   const result = db.prepare(`
     INSERT INTO project_documents (project_id, contractor_id, uploaded_by, filename, original_name, file_path, file_size, mime_type, category, description)

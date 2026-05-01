@@ -12,6 +12,7 @@ export default function SubcontractorNav({ user }: { user?: any }) {
     { href: '/subcontractor', label: '📊 Dashboard', exact: true },
     { href: '/subcontractor/invoices', label: '📋 My Invoices' },
     { href: '/subcontractor/submit', label: 'Submit Invoice' },
+    { href: '/subcontractor/site-photos', label: '📸 Site Photos' },
     { href: '/subcontractor/variations', label: 'Variations' },
     { href: '/subcontractor/returns', label: 'Returns' },
     { href: '/subcontractor/compliance', label: '🛡️ Compliance' },

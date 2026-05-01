@@ -40,6 +40,8 @@ const navSections = [
     items: [
       { href: '/contractor/payments', label: 'Payments', icon: '💳' },
       { href: '/contractor/payments/schedule', label: 'Cash Flow', icon: '💸' },
+      { href: '/contractor/vat-report', label: 'VAT Report', icon: '🧮' },
+      { href: '/contractor/hmrc', label: 'HMRC Hub', icon: '🏛️' },
     ],
   },
   {

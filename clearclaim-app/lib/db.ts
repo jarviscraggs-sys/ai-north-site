@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-const DB_PATH = path.join(process.cwd(), 'clearclaim.db');
+const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), 'clearclaim.db');
 
 let db: Database.Database;
 
@@ -101,7 +101,19 @@ function initSchema(db: Database.Database) {
       expires_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
+
+  // Migrations
+  try { db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0'); } catch(e) { /* already exists */ }
 
   // Audit log table
   db.exec(`CREATE TABLE IF NOT EXISTS audit_log (
@@ -372,6 +384,21 @@ function initSchema(db: Database.Database) {
     verified_by TEXT,
     notes TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Site photos table
+  db.exec(`CREATE TABLE IF NOT EXISTS site_photos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subcontractor_id INTEGER NOT NULL,
+    contractor_id INTEGER NOT NULL,
+    invoice_id INTEGER,
+    project_id INTEGER,
+    filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    caption TEXT,
+    uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (subcontractor_id) REFERENCES users(id),
+    FOREIGN KEY (contractor_id) REFERENCES users(id)
   )`);
 
   // Seed sample projects if none exist

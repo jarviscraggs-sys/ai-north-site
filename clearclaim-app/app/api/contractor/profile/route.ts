@@ -46,7 +46,7 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: 'Only JPG, PNG, GIF, or WebP images are allowed' }, { status: 400 });
       }
 
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'logos');
+      const uploadDir = path.join(process.cwd(), 'uploads', 'logos');
       await mkdir(uploadDir, { recursive: true });
 
       const ext = file.type === 'image/jpeg' ? 'jpg' : file.type === 'image/png' ? 'png' : file.type === 'image/gif' ? 'gif' : 'webp';
@@ -56,7 +56,7 @@ export async function PATCH(req: Request) {
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
 
-      logoPath = `/uploads/logos/${filename}`;
+      logoPath = `uploads/logos/${filename}`;
     }
   } else {
     const body = await req.json();

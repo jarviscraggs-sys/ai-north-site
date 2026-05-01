@@ -21,11 +21,15 @@ export async function GET(req: NextRequest) {
       SUM(amount + vat_amount) as total_value,
       SUM(CASE WHEN status = 'approved' AND strftime('%Y-%m', submitted_at) = strftime('%Y-%m', 'now') THEN amount ELSE 0 END) as approved_this_month
     FROM invoices
-  `).get() as any;
+    WHERE contractor_id = ?
+  `).get(user.id) as any;
 
   const flaggedCount = db.prepare(`
-    SELECT COUNT(DISTINCT invoice_id) as count FROM ai_flags
-  `).get() as any;
+    SELECT COUNT(DISTINCT ai_flags.invoice_id) as count 
+    FROM ai_flags
+    JOIN invoices ON invoices.id = ai_flags.invoice_id
+    WHERE invoices.contractor_id = ?
+  `).get(user.id) as any;
 
   return NextResponse.json({ ...stats, flagged_count: flaggedCount.count });
 }

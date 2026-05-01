@@ -3,7 +3,7 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = path.join(process.cwd(), 'clearclaim.db');
+const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), 'clearclaim.db');
 console.log('[ClearClaim] Startup — DB path:', DB_PATH);
 
 try {
@@ -130,6 +130,15 @@ try {
       used INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       expires_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
     CREATE TABLE IF NOT EXISTS employees (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -273,8 +282,88 @@ try {
       description TEXT,
       uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS site_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      subcontractor_id INTEGER NOT NULL,
+      contractor_id INTEGER NOT NULL,
+      invoice_id INTEGER,
+      project_id INTEGER,
+      filename TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      caption TEXT,
+      uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (subcontractor_id) REFERENCES users(id),
+      FOREIGN KEY (contractor_id) REFERENCES users(id)
+    );
   `);
 
+
+  // Migrations
+  try { db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0"); } catch(e) { /* already exists */ }
+
+  // For each subcontractor, find their contractor via invites and ensure link exists
+  try {
+    // First: for all subcontractors who accepted invites, ensure sc link exists
+    const inviteLinks = db.prepare(`
+      SELECT DISTINCT inv.contractor_id, u.id as sub_id, inv.cis_rate
+      FROM invites inv
+      JOIN users u ON u.email = inv.email AND u.role = 'subcontractor'
+      WHERE inv.used = 1
+    `).all();
+    for (const link of inviteLinks) {
+      try {
+        db.prepare(`INSERT OR IGNORE INTO subcontractor_contractors (subcontractor_id, contractor_id, cis_rate) VALUES (?, ?, ?)`)
+          .run(link.sub_id, link.contractor_id, link.cis_rate || 20);
+      } catch(e) {}
+    }
+
+    // Second: for each contractor, link all their subs (those whose invoices have contractor_id set)
+    const invoiceLinks = db.prepare(`
+      SELECT DISTINCT i.subcontractor_id, i.contractor_id
+      FROM invoices i
+      WHERE i.contractor_id IS NOT NULL
+    `).all();
+    for (const link of invoiceLinks) {
+      try {
+        db.prepare(`INSERT OR IGNORE INTO subcontractor_contractors (subcontractor_id, contractor_id, cis_rate) VALUES (?, ?, 20)`)
+          .run(link.subcontractor_id, link.contractor_id);
+      } catch(e) {}
+    }
+
+    // Third: link demo subs to demo contractor
+    const demoContractor = db.prepare(`SELECT id FROM users WHERE email = 'contractor@getclearclaim.co.uk'`).get();
+    if (demoContractor) {
+      const demoSubs = db.prepare(`SELECT id FROM users WHERE email LIKE '%@getclearclaim.co.uk' AND role = 'subcontractor'`).all();
+      for (const sub of demoSubs) {
+        try {
+          db.prepare(`INSERT OR IGNORE INTO subcontractor_contractors (subcontractor_id, contractor_id, cis_rate) VALUES (?, ?, 20)`)
+            .run(sub.id, demoContractor.id);
+          // Also update invoices to have contractor_id
+          db.prepare(`UPDATE invoices SET contractor_id = ? WHERE subcontractor_id = ? AND contractor_id IS NULL`)
+            .run(demoContractor.id, sub.id);
+        } catch(e) {}
+      }
+    }
+  } catch(e) { console.error('[ClearClaim] Sub-link migration error:', e.message); }
+
+  // Backfill subcontractor_contractors from used invites (ensures all accepted invites are linked)
+  try {
+    const usedInvites = db.prepare(`
+      SELECT inv.contractor_id, u.id as sub_id, inv.cis_rate
+      FROM invites inv
+      JOIN users u ON u.email = inv.email
+      WHERE inv.used = 1
+    `).all();
+    for (const inv of usedInvites) {
+      try {
+        db.prepare(`INSERT OR IGNORE INTO subcontractor_contractors (subcontractor_id, contractor_id, cis_rate) VALUES (?, ?, ?)`)
+          .run(inv.sub_id, inv.contractor_id, inv.cis_rate || 20);
+      } catch(e) {}
+    }
+    if (usedInvites.length > 0) {
+      console.log(`[ClearClaim] Migration: ensured ${usedInvites.length} sub-contractor link(s).`);
+    }
+  } catch(e) { console.error('[ClearClaim] Sub-contractor link migration error:', e.message); }
   // Seed demo accounts if no users exist
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
   console.log('[ClearClaim] Users in DB:', userCount.c);
@@ -297,9 +386,15 @@ try {
       `INSERT INTO users (email, password_hash, name, company, role) VALUES (?, ?, ?, ?, ?)`
     ).run('sub2@getclearclaim.co.uk', hash, 'Tom Jones', 'Jones Groundworks', 'subcontractor').lastInsertRowid;
 
-    db.prepare(
+    const sub3Id = db.prepare(
       `INSERT INTO users (email, password_hash, name, company, role) VALUES (?, ?, ?, ?, ?)`
-    ).run('sub3@getclearclaim.co.uk', hash, 'Pete Sykes', 'Peak Plumbing Services', 'subcontractor');
+    ).run('sub3@getclearclaim.co.uk', hash, 'Pete Sykes', 'Peak Plumbing Services', 'subcontractor').lastInsertRowid;
+
+    // --- Link demo subs to demo contractor ---
+    const linkSub = db.prepare(`INSERT OR IGNORE INTO subcontractor_contractors (subcontractor_id, contractor_id, cis_rate) VALUES (?, ?, ?)`);
+    linkSub.run(sub1Id, contractorId, 20);
+    linkSub.run(sub2Id, contractorId, 20);
+    linkSub.run(sub3Id, contractorId, 20);
 
     // --- Employee users ---
     const emp1UserId = db.prepare(
@@ -421,15 +516,17 @@ try {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
-    insertNotif.run(contractorId, 'invoice', 'New Invoice Submitted', 'Smith Electrical Ltd has submitted invoice INV-2024-003 for £2,400 + VAT.', '/invoices', 0, '2024-03-11 08:46:00');
-    insertNotif.run(contractorId, 'invoice', 'Invoice Queried', 'You have raised a query on invoice INV-2024-004 from Smith Electrical Ltd.', '/invoices', 1, '2024-03-20 16:01:00');
-    insertNotif.run(contractorId, 'invoice', 'New Invoice Submitted', 'Jones Groundworks has submitted invoice INV-GW-002 for £2,800 + VAT.', '/invoices', 0, '2024-03-04 07:31:00');
-    insertNotif.run(contractorId, 'holiday', 'Holiday Request Received', 'Mike Johnson has requested 5 days annual leave (15–19 Apr 2024).', '/employees', 0, '2024-03-20 09:01:00');
-    insertNotif.run(contractorId, 'holiday', 'Holiday Request Received', 'Sarah Williams has requested 5 days annual leave (6–10 May 2024).', '/employees', 0, '2024-03-18 11:01:00');
-    insertNotif.run(contractorId, 'holiday', 'Holiday Request Received', 'Tom Roberts has requested 5 days annual leave (3–7 Jun 2024).', '/employees', 0, '2024-03-19 09:31:00');
-    insertNotif.run(contractorId, 'timesheet', 'Timesheets Ready for Review', '3 timesheets submitted for week starting 18 Mar 2024 — awaiting review.', '/timesheets', 0, '2024-03-22 18:01:00');
-    insertNotif.run(contractorId, 'compliance', 'Compliance Reminder', 'Smith Electrical Ltd public liability insurance expires in 30 days.', '/subcontractors', 0, '2024-03-15 08:00:00');
+    insertNotif.run(contractorId, 'invoice', 'New Invoice Submitted', 'Smith Electrical Ltd has submitted invoice INV-2024-003 for £2,400 + VAT.', '/contractor/invoices', 0, '2024-03-11 08:46:00');
+    insertNotif.run(contractorId, 'invoice', 'Invoice Queried', 'You have raised a query on invoice INV-2024-004 from Smith Electrical Ltd.', '/contractor/invoices', 1, '2024-03-20 16:01:00');
+    insertNotif.run(contractorId, 'invoice', 'New Invoice Submitted', 'Jones Groundworks has submitted invoice INV-GW-002 for £2,800 + VAT.', '/contractor/invoices', 0, '2024-03-04 07:31:00');
+    insertNotif.run(contractorId, 'holiday', 'Holiday Request Received', 'Mike Johnson has requested 5 days annual leave (15–19 Apr 2024).', '/contractor/holidays', 0, '2024-03-20 09:01:00');
+    insertNotif.run(contractorId, 'holiday', 'Holiday Request Received', 'Sarah Williams has requested 5 days annual leave (6–10 May 2024).', '/contractor/holidays', 0, '2024-03-18 11:01:00');
+    insertNotif.run(contractorId, 'holiday', 'Holiday Request Received', 'Tom Roberts has requested 5 days annual leave (3–7 Jun 2024).', '/contractor/holidays', 0, '2024-03-19 09:31:00');
+    insertNotif.run(contractorId, 'timesheet', 'Timesheets Ready for Review', '3 timesheets submitted for week starting 18 Mar 2024 — awaiting review.', '/contractor/timesheets', 0, '2024-03-22 18:01:00');
+    insertNotif.run(contractorId, 'compliance', 'Compliance Reminder', 'Smith Electrical Ltd public liability insurance expires in 30 days.', '/contractor/subcontractors', 0, '2024-03-15 08:00:00');
 
+    // Mark all demo accounts as email verified
+    db.prepare("UPDATE users SET email_verified = 1 WHERE email LIKE '%@getclearclaim.co.uk'").run();
     console.log('[ClearClaim] Rich demo data seeded successfully.');
     console.log('[ClearClaim] Logins: contractor@getclearclaim.co.uk / demo123');
     console.log('[ClearClaim]         sub1/sub2/sub3@getclearclaim.co.uk / demo123');

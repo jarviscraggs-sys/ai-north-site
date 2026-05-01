@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     // Handle file attachments
     const files = formData.getAll('attachments') as File[];
     if (files.length > 0) {
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', String(invoiceId));
+      const uploadDir = path.join(process.cwd(), 'uploads', String(invoiceId));
       await mkdir(uploadDir, { recursive: true });
 
       for (const file of files) {
@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
           db.prepare(`
             INSERT INTO attachments (invoice_id, filename, file_path)
             VALUES (?, ?, ?)
-          `).run(invoiceId, file.name, `/uploads/${invoiceId}/${filename}`);
+          `).run(invoiceId, file.name, `uploads/${invoiceId}/${filename}`);
         }
       }
     }

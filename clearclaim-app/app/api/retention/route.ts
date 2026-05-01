@@ -25,9 +25,11 @@ export async function GET(req: NextRequest) {
            i.subcontractor_id
     FROM invoices i
     JOIN users u ON i.subcontractor_id = u.id
-    WHERE i.retention_amount > 0 AND i.status = 'approved'
+    WHERE i.retention_amount > 0
+      AND i.status = 'approved'
+      AND i.contractor_id = ?
   `;
-  const params: any[] = [];
+  const params: any[] = [user.id];
 
   if (subcontractorId) {
     query += ' AND i.subcontractor_id = ?';

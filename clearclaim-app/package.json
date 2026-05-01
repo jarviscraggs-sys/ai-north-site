@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node scripts/startup.js && next start -p ${PORT:-3000}",
+    "start": "node scripts/startup.js && next start -p $PORT",
     "lint": "next lint",
     "seed": "npx tsx scripts/seed.ts"
   },
@@ -13,6 +13,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.48.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/nodemailer": "^8.0.0",

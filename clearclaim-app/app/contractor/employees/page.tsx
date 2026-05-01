@@ -109,45 +109,6 @@ export default function ContractorEmployeesPage() {
     setTimeout(() => setInviteCopied(false), 2000);
   };
 
-  const FormFields = () => (
-    <>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Full Name *</label>
-        <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Email *</label>
-        <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Job Title</label>
-        <input value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Hourly Rate (£)</label>
-        <input type="number" step="0.01" min="0" value={form.hourly_rate} onChange={e => setForm(f => ({ ...f, hourly_rate: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Weekly Hours</label>
-        <input type="number" step="0.5" value={form.weekly_hours} onChange={e => setForm(f => ({ ...f, weekly_hours: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Holiday Allowance (days)</label>
-        <input type="number" value={form.holiday_allowance} onChange={e => setForm(f => ({ ...f, holiday_allowance: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Start Date</label>
-        <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </div>
-    </>
-  );
 
   return (
     <div>
@@ -198,7 +159,43 @@ export default function ContractorEmployeesPage() {
             </div>
           ) : (
             <form onSubmit={handleInvite} className="grid grid-cols-2 gap-4">
-              <FormFields />
+              <>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Full Name *</label>
+                <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Email *</label>
+                <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Job Title</label>
+                <input value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Hourly Rate (£)</label>
+                <input type="number" step="0.01" min="0" value={form.hourly_rate} onChange={e => setForm(f => ({ ...f, hourly_rate: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Weekly Hours</label>
+                <input type="number" step="0.5" value={form.weekly_hours} onChange={e => setForm(f => ({ ...f, weekly_hours: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Holiday Allowance (days)</label>
+                <input type="number" value={form.holiday_allowance} onChange={e => setForm(f => ({ ...f, holiday_allowance: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Start Date</label>
+                <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              </>
               <div className="flex items-end">
                 <button type="submit" disabled={submitting}
                   className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition">
@@ -216,7 +213,43 @@ export default function ContractorEmployeesPage() {
           <h2 className="font-semibold text-white mb-4">New Employee</h2>
           {error && <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-red-300 text-sm">{error}</div>}
           <form onSubmit={handleAdd} className="grid grid-cols-2 gap-4">
-            <FormFields />
+              <>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Full Name *</label>
+                <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Email *</label>
+                <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Job Title</label>
+                <input value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Hourly Rate (£)</label>
+                <input type="number" step="0.01" min="0" value={form.hourly_rate} onChange={e => setForm(f => ({ ...f, hourly_rate: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Weekly Hours</label>
+                <input type="number" step="0.5" value={form.weekly_hours} onChange={e => setForm(f => ({ ...f, weekly_hours: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Holiday Allowance (days)</label>
+                <input type="number" value={form.holiday_allowance} onChange={e => setForm(f => ({ ...f, holiday_allowance: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Start Date</label>
+                <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              </>
             <div className="flex items-end">
               <button type="submit" disabled={submitting}
                 className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition">

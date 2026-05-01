@@ -189,7 +189,7 @@ export default async function SubInvoiceDetail({ params }: { params: Promise<{ i
               <p className="text-xs font-medium text-blue-400 uppercase tracking-wide mb-2">Attachments</p>
               <div className="space-y-2">
                 {attachments.map(att => (
-                  <a key={att.id} href={att.file_path} target="_blank" rel="noreferrer"
+                  <a key={att.id} href={`/api/files?path=${encodeURIComponent(att.file_path)}`} target="_blank" rel="noreferrer"
                     className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition text-sm text-blue-300">
                     📎 {att.filename}
                   </a>

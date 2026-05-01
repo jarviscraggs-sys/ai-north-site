@@ -8,6 +8,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const db = getDb();
 
+  const user = session.user as any;
+
   const dispute = db.prepare(`
     SELECT d.*, 
       i.invoice_number, i.amount as invoice_amount, i.submitted_at as invoice_date,
@@ -20,6 +22,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   `).get(id) as any;
 
   if (!dispute) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Ownership check
+  if (user.role === 'contractor' && dispute.contractor_id !== Number(user.id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  if (user.role === 'subcontractor' && dispute.subcontractor_id !== Number(user.id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   return NextResponse.json({ dispute });
 }

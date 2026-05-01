@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 export default function ContractorSettings() {
+  const buildFileUrl = (filePath: string) => `/api/files?path=${encodeURIComponent(filePath)}`;
   // Profile / notifications state
   const [accountantEmail, setAccountantEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -46,7 +47,7 @@ export default function ContractorSettings() {
     fetch('/api/contractor/profile')
       .then(r => r.json())
       .then(data => {
-        if (data.profile?.logo_path) setLogoPath(data.profile.logo_path);
+        if (data.profile?.logo_path) setLogoPath(buildFileUrl(data.profile.logo_path));
         if (data.profile?.company) setCompany(data.profile.company);
       })
       .catch(() => {});
@@ -113,7 +114,8 @@ export default function ContractorSettings() {
       if (res.ok) {
         const data = await res.json();
         if (data.profile?.logo_path) {
-          setLogoPath(data.profile.logo_path + '?t=' + Date.now());
+          const base = buildFileUrl(data.profile.logo_path);
+          setLogoPath(`${base}&t=${Date.now()}`);
           setLogoFile(null);
           setLogoPreview(null);
         }

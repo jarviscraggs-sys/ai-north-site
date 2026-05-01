@@ -20,8 +20,9 @@ export async function GET(req: NextRequest) {
              SUM(retention_amount) AS retention
       FROM invoices
       WHERE strftime('%Y-%m', submitted_at) = ?
+        AND contractor_id = ?
       GROUP BY ym
-    `).all(month);
+    `).all(month, user.id);
 
     const bySub = db.prepare(`
       SELECT u.company, COUNT(*) AS invoices,
@@ -32,8 +33,9 @@ export async function GET(req: NextRequest) {
       FROM invoices i
       JOIN users u ON i.subcontractor_id = u.id
       WHERE strftime('%Y-%m', i.submitted_at) = ?
+        AND i.contractor_id = ?
       GROUP BY u.id
-    `).all(month);
+    `).all(month, user.id);
 
     return NextResponse.json({ month, rows, bySub });
   }

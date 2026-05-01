@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
   const invite = db.prepare(`
-    SELECT * FROM invites WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+    SELECT * FROM invites WHERE token = ? AND used = 0 
+    AND (expires_at > datetime('now') OR expires_at > strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
   `).get(token) as any;
 
   if (!invite) {
@@ -32,19 +33,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { token, password, confirmPassword, name, company } = body;
+    const { token, password, name, company } = body;
 
     if (!token) return NextResponse.json({ error: 'Token required' }, { status: 400 });
     if (!password) return NextResponse.json({ error: 'Password required' }, { status: 400 });
-    if (password !== confirmPassword) {
-      return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
-    }
     if (password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
     }
 
     const invite = db.prepare(`
-      SELECT * FROM invites WHERE token = ? AND used = 0 AND expires_at > datetime('now')
+      SELECT * FROM invites WHERE token = ? AND used = 0
+      AND (expires_at > datetime('now') OR expires_at > strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
     `).get(token) as any;
 
     if (!invite) {
@@ -64,6 +63,12 @@ export async function POST(req: NextRequest) {
       INSERT INTO users (email, password_hash, name, company, role, cis_rate)
       VALUES (?, ?, ?, ?, 'subcontractor', ?)
     `).run(invite.email, passwordHash, name || invite.name, company || invite.company, invite.cis_rate);
+
+    // Link subcontractor to contractor
+    try {
+      db.prepare(`INSERT OR IGNORE INTO subcontractor_contractors (subcontractor_id, contractor_id, cis_rate) VALUES (?, ?, ?)`)
+        .run(result.lastInsertRowid, invite.contractor_id, invite.cis_rate);
+    } catch(e) { /* ignore */ }
 
     // Mark invite as used
     db.prepare('UPDATE invites SET used = 1 WHERE id = ?').run(invite.id);

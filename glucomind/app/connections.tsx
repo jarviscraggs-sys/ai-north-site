@@ -21,6 +21,7 @@ import {
   isHealthKitAvailable,
   requestHealthKitPermissions,
   getHealthKitStatusMessage,
+  runHealthKitDiagnostic,
 } from '../services/healthkit';
 import {
   isConnected as dexcomIsConnected,
@@ -222,19 +223,16 @@ export default function ConnectionsScreen() {
       if (granted) {
         setHkConnected(true);
         await setSetting('healthkit_connected', 'true');
-        Alert.alert(
-          'Apple Health Connected ✅',
-          'GlucoMind can now read Glucose, Heart Rate, Steps, and Sleep from Apple Health.'
-        );
+        // Run diagnostic to show what data we can see
+        const report = await runHealthKitDiagnostic();
+        Alert.alert('Apple Health Connected ✅', report);
       } else {
-        Alert.alert(
-          'Permission Denied',
-          'Please grant Apple Health permissions in Settings > Privacy > Health.'
-        );
+        // Run diagnostic even on denial to debug
+        const report = await runHealthKitDiagnostic();
+        Alert.alert('Permission Result', `Granted: false\n\n${report}`);
       }
     } catch (err: any) {
-      // HealthKit native module may not be available — still allow UI
-      Alert.alert('HealthKit Unavailable', 'Apple Health integration requires a device with HealthKit support. Please check your device settings.');
+      Alert.alert('HealthKit Error', err?.message ?? String(err));
     } finally {
       setHkLoading(false);
     }

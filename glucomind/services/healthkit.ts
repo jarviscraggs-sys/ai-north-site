@@ -110,6 +110,74 @@ function dateRange(hoursBack: number) {
   };
 }
 
+// ─── Diagnostic ──────────────────────────────────────────────────────────────
+
+/**
+ * Run a full diagnostic on HealthKit and return a human-readable report.
+ * Used to debug connection issues.
+ */
+export async function runHealthKitDiagnostic(): Promise<string> {
+  const lines: string[] = [];
+  lines.push(`Platform: ${Platform.OS}`);
+  
+  loadHealthKit();
+  lines.push(`Module loaded: ${_healthKitLoaded}`);
+  
+  if (!_healthKitLoaded) {
+    return lines.join('\n');
+  }
+
+  // Test authorization
+  try {
+    const authResult = await requestAuthorization({
+      toRead: [BLOOD_GLUCOSE],
+    });
+    lines.push(`Auth result: ${authResult}`);
+  } catch (e: any) {
+    lines.push(`Auth error: ${e?.message ?? e}`);
+  }
+
+  // Test query with mg/dL (standard HealthKit unit)
+  try {
+    const { startDate, endDate } = dateRange(24);
+    const samples = await queryQuantitySamples(BLOOD_GLUCOSE, {
+      limit: 5,
+      ascending: false,
+      unit: 'mg/dL',
+      filter: { date: { startDate, endDate } },
+    });
+    lines.push(`Samples (mg/dL): ${samples.length}`);
+    if (samples.length > 0) {
+      const s = samples[0];
+      const mmol = Math.round((s.quantity / 18.0182) * 10) / 10;
+      lines.push(`Latest: ${s.quantity} mg/dL = ${mmol} mmol/L`);
+      lines.push(`Time: ${s.startDate}`);
+      lines.push(`Source: ${s.sourceRevision?.source?.bundleIdentifier ?? 'unknown'}`);
+    }
+  } catch (e: any) {
+    lines.push(`Query error (mg/dL): ${e?.message ?? e}`);
+  }
+
+  // Also try mmol/L
+  try {
+    const { startDate, endDate } = dateRange(24);
+    const samples2 = await queryQuantitySamples(BLOOD_GLUCOSE, {
+      limit: 5,
+      ascending: false,
+      unit: 'mmol<180.15588000005408>/dL',
+      filter: { date: { startDate, endDate } },
+    });
+    lines.push(`Samples (mmol unit): ${samples2.length}`);
+    if (samples2.length > 0) {
+      lines.push(`Latest mmol: ${samples2[0].quantity}`);
+    }
+  } catch (e: any) {
+    lines.push(`Query error (mmol): ${e?.message ?? e}`);
+  }
+
+  return lines.join('\n');
+}
+
 // ─── Glucose ──────────────────────────────────────────────────────────────────
 
 export async function getHealthKitGlucose(
@@ -120,15 +188,16 @@ export async function getHealthKitGlucose(
   try {
     const { startDate, endDate } = dateRange(hoursBack);
 
+    // Query in mg/dL (HealthKit standard) and convert to mmol/L
     const samples = await queryQuantitySamples(BLOOD_GLUCOSE, {
       limit: 0, // 0 = all
       ascending: true,
-      unit: 'mmol/L',
+      unit: 'mg/dL',
       filter: { date: { startDate, endDate } },
     });
 
     return samples.map((sample: any) => ({
-      value: Math.round(sample.quantity * 10) / 10, // Already in mmol/L from Dexcom UK
+      value: Math.round((sample.quantity / 18.0182) * 10) / 10, // Convert mg/dL → mmol/L
       timestamp: new Date(sample.startDate).getTime(),
       source: sample.sourceRevision?.source?.bundleIdentifier ?? 'healthkit',
     }));

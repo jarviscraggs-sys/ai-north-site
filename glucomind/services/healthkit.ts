@@ -123,12 +123,12 @@ export async function getHealthKitGlucose(
     const samples = await queryQuantitySamples(BLOOD_GLUCOSE, {
       limit: 0, // 0 = all
       ascending: true,
-      unit: 'mg/dL',
+      unit: 'mmol/L',
       filter: { date: { startDate, endDate } },
     });
 
     return samples.map((sample: any) => ({
-      value: Math.round((sample.quantity / 18.0182) * 10) / 10,
+      value: Math.round(sample.quantity * 10) / 10, // Already in mmol/L from Dexcom UK
       timestamp: new Date(sample.startDate).getTime(),
       source: sample.sourceRevision?.source?.bundleIdentifier ?? 'healthkit',
     }));

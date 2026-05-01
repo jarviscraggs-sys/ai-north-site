@@ -91,7 +91,7 @@ export async function requestHealthKitPermissions(): Promise<boolean> {
 
   try {
     const result = await requestAuthorization({
-      read: [BLOOD_GLUCOSE, HEART_RATE, STEP_COUNT, SLEEP_ANALYSIS],
+      toRead: [BLOOD_GLUCOSE, HEART_RATE, STEP_COUNT, SLEEP_ANALYSIS],
     });
     return !!result;
   } catch (error) {

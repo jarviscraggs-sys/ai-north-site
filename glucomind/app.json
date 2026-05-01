@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "GlucoMind",
+    "slug": "glucomind",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.glucomind.app",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "GlucoMind reads your glucose, heart rate, steps, and sleep data from Apple Health to provide personalised diabetes management insights.",
+        "NSHealthUpdateUsageDescription": "GlucoMind may write health data summaries back to Apple Health.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.background-delivery": true,
+        "com.apple.developer.healthkit.access": []
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.glucomind.app",
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA"
+      ],
+      "edgeToEdgeEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "scheme": "glucomind",
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#00BFA5"
+        }
+      ],
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "GlucoMind reads your glucose, heart rate, steps, and sleep data to provide personalised diabetes management insights.",
+          "NSHealthUpdateUsageDescription": "GlucoMind may write health data summaries back to Apple Health."
+        }
+      ],
+      "expo-camera"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1e5b7377-80c4-48e2-ad2e-8dd43d9c0336"
+      }
+    },
+    "owner": "jarvis321"
+  }
+}

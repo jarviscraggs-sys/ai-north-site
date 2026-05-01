@@ -36,6 +36,12 @@ Skills define _how_ tools work. This file is for _your_ specifics — the stuff 
 - Region: eu-west-2 (London)
 - Account: GitHub login (jarviscraggs-sys)
 
+## Dexcom Share (GlucoMind — Primary Data Source)
+- Email: dayne.craggs@aol.co.uk
+- Password: Guswinnie123*
+- Region: EU/UK (shareous1.dexcom.com)
+- Status: Waiting for Dexcom Share server outage to resolve
+
 ## Dexcom API (GlucoMind)
 - Client ID: `oulQCboievxUTiefZYua65910YuvUSsu`
 - Client Secret: `Y3bqlGyMWQ4AwJt6`

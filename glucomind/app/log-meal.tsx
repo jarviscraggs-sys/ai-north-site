@@ -622,7 +622,7 @@ export default function LogMeal() {
                   style={{ backgroundColor: Colors.cardBorder, color: Colors.textPrimary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, textAlign: 'center' }}
                   placeholder="HH:MM (e.g. 14:30)"
                   placeholderTextColor={Colors.textMuted}
-                  keyboardType="numbers-and-punctuation"
+                  keyboardType="numbers-and-punctuation" inputAccessoryViewID="keyboard-done"
                   onChangeText={(text) => {
                     const match = text.match(/^(\d{1,2}):(\d{2})$/);
                     if (match) {

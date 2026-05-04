@@ -108,7 +108,7 @@ export default function RemindersScreen() {
     `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView keyboardDismissMode="on-drag" style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -149,20 +149,20 @@ export default function RemindersScreen() {
               style={styles.timeInput}
               value={newHour}
               onChangeText={setNewHour}
-              keyboardType="number-pad"
+              keyboardType="number-pad" inputAccessoryViewID="keyboard-done"
               maxLength={2}
               placeholder="21"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={Colors.textMuted} returnKeyType="done"
             />
             <Text style={styles.timeSep}>:</Text>
             <TextInput
               style={styles.timeInput}
               value={newMinute}
               onChangeText={setNewMinute}
-              keyboardType="number-pad"
+              keyboardType="number-pad" inputAccessoryViewID="keyboard-done"
               maxLength={2}
               placeholder="00"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={Colors.textMuted} returnKeyType="done"
             />
           </View>
 
@@ -189,15 +189,15 @@ export default function RemindersScreen() {
                 value={newInsulinName}
                 onChangeText={setNewInsulinName}
                 placeholder="Insulin name (e.g. Tresiba)"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={Colors.textMuted} returnKeyType="done"
               />
               <TextInput
                 style={styles.input}
                 value={newInsulinUnits}
                 onChangeText={setNewInsulinUnits}
                 placeholder="Units (e.g. 30)"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
+                placeholderTextColor={Colors.textMuted} returnKeyType="done"
+                keyboardType="decimal-pad" inputAccessoryViewID="keyboard-done"
               />
             </View>
           )}
@@ -209,7 +209,7 @@ export default function RemindersScreen() {
             value={newTitle}
             onChangeText={setNewTitle}
             placeholder={newType === 'insulin' ? 'Night-time insulin' : 'Reminder'}
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={Colors.textMuted} returnKeyType="done"
           />
           <Text style={styles.fieldLabel}>Message (optional)</Text>
           <TextInput
@@ -217,7 +217,7 @@ export default function RemindersScreen() {
             value={newMessage}
             onChangeText={setNewMessage}
             placeholder={newType === 'insulin' ? 'Take 30 units Tresiba' : 'Custom message'}
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={Colors.textMuted} returnKeyType="done"
           />
 
           <TouchableOpacity style={styles.createBtn} onPress={handleCreate}>

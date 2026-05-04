@@ -9,6 +9,7 @@ import { requestNotificationPermissions } from '../services/notifications';
 import { registerBackgroundSync } from '../services/background-sync';
 import { initRemindersTable, rescheduleAllReminders } from '../services/reminders';
 import { Colors } from '../constants/colors';
+import { KeyboardDoneBar } from '../components/DismissKeyboard';
 import { getCurrentUser, fetchProfile } from '../services/supabase';
 
 export default function RootLayout() {
@@ -172,7 +173,12 @@ export default function RootLayout() {
           name="emergency-contacts"
           options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.background } }}
         />
+        <Stack.Screen
+          name="reminders"
+          options={{ title: 'Reminders', presentation: 'modal', headerStyle: { backgroundColor: Colors.surface } }}
+        />
       </Stack>
+      <KeyboardDoneBar />
     </>
   );
 }

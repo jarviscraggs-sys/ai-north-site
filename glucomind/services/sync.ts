@@ -38,8 +38,13 @@ import {
   getGlucoseReadings,
   getAllSettings,
   getSetting,
+  getMealsInRange,
+  getInsulinDosesInRange,
 } from './database';
-import { sendSpikeAlert, sendHighAlert, sendLowAlert } from './notifications';
+import {
+  sendSpikeAlert, sendHighAlert, sendLowAlert,
+  sendSpikePrompt, sendHighWithPrompt, sendLowWithPrompt,
+} from './notifications';
 import { GlucoseReading } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -460,29 +465,59 @@ async function checkAlerts(reading: GlucoseReading): Promise<void> {
 
   try {
     const settings = await getAllSettings();
+    const thirtyMinsAgo = now - 30 * 60 * 1000;
+    const twoHoursAgo = now - 2 * 60 * 60 * 1000;
 
-    // Low alert
+    // Check for recent meals and insulin (for contextual prompts)
+    const recentMeals = await getMealsInRange(twoHoursAgo, now);
+    const recentInsulin = await getInsulinDosesInRange(twoHoursAgo, now);
+    const hasRecentMeal = recentMeals.length > 0;
+    const hasRecentInsulin = recentInsulin.length > 0;
+
+    // ── LOW GLUCOSE ──────────────────────────────────────────────────
+    // Critical: prompt to eat fast carbs
     if (reading.value < settings.target_low && settings.notify_low) {
       if (now - _lastLowAlert > 15 * 60 * 1000) {
-        await sendLowAlert(reading.value);
+        await sendLowWithPrompt(reading.value);
         _lastLowAlert = now;
       }
     }
 
-    // High alert
+    // ── HIGH GLUCOSE ─────────────────────────────────────────────────
+    // Smart: check if they've already taken insulin
     if (reading.value > settings.target_high && settings.notify_high) {
       if (now - _lastHighAlert > 30 * 60 * 1000) {
-        await sendHighAlert(reading.value);
+        await sendHighWithPrompt(reading.value, hasRecentInsulin);
         _lastHighAlert = now;
       }
     }
 
-    // Spike detection
+    // ── RAPID RISE / SPIKE ───────────────────────────────────────────
+    // Smart: ask if they've eaten (likely cause of the spike)
     if (_lastValue !== null && settings.notify_spike) {
       const rise = reading.value - _lastValue;
       if (rise > 1.0 && now - _lastSpikeAlert > 30 * 60 * 1000) {
-        await sendSpikeAlert(reading.value);
+        if (!hasRecentMeal) {
+          // No meal logged — prompt them to log what they ate
+          await sendSpikePrompt(reading.value, rise);
+        } else {
+          // Meal logged — just a standard spike alert
+          await sendSpikeAlert(reading.value);
+        }
         _lastSpikeAlert = now;
+      }
+    }
+
+    // ── RAPID DROP ────────────────────────────────────────────────────
+    // Ask if they've taken insulin (likely cause of the drop)
+    if (_lastValue !== null) {
+      const drop = _lastValue - reading.value;
+      if (drop > 1.5 && reading.value > settings.target_low) {
+        // Dropping fast but not yet low — informational
+        if (!hasRecentInsulin && now - _lastLowAlert > 30 * 60 * 1000) {
+          // Unusual fast drop without logged insulin — could be exercise, delayed insulin, etc.
+          // Don't alert yet, just track. Will trigger low alert if it keeps dropping.
+        }
       }
     }
 

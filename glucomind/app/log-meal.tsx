@@ -41,6 +41,10 @@ export default function LogMeal() {
   const [category, setCategory] = useState<Meal['category']>('Lunch');
   const [recentMeals, setRecentMeals] = useState<Meal[]>([]);
 
+  // Time picker state
+  const [useCustomTime, setUseCustomTime] = useState(false);
+  const [customTime, setCustomTime] = useState<Date>(new Date());
+
   // AI analysis state
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<MealAnalysis | null>(null);
@@ -202,7 +206,7 @@ export default function LogMeal() {
     if (!analysis) return;
     setSaving(true);
     try {
-      const now = Date.now();
+      const now = useCustomTime ? customTime.getTime() : Date.now();
       await insertMeal({
         description: description.trim(),
         carbs_estimate: analysis.totalCarbs,
@@ -504,6 +508,46 @@ export default function LogMeal() {
               ))}
             </View>
           </View>
+
+          {/* When did you eat? */}
+          <Card>
+            <Text style={styles.cardTitle}>When did you eat?</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: !useCustomTime ? Colors.primary + '15' : Colors.cardBorder, borderWidth: 1, borderColor: !useCustomTime ? Colors.primary + '44' : 'transparent' }}
+                onPress={() => setUseCustomTime(false)}
+              >
+                <Text style={{ color: !useCustomTime ? Colors.primary : Colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Just Now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: useCustomTime ? Colors.primary + '15' : Colors.cardBorder, borderWidth: 1, borderColor: useCustomTime ? Colors.primary + '44' : 'transparent' }}
+                onPress={() => setUseCustomTime(true)}
+              >
+                <Text style={{ color: useCustomTime ? Colors.primary : Colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Earlier</Text>
+              </TouchableOpacity>
+            </View>
+            {useCustomTime && (
+              <View style={{ marginTop: 12 }}>
+                <TextInput
+                  style={{ backgroundColor: Colors.cardBorder, color: Colors.textPrimary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, textAlign: 'center' }}
+                  placeholder="HH:MM (e.g. 14:30)"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="numbers-and-punctuation"
+                  onChangeText={(text) => {
+                    const match = text.match(/^(\d{1,2}):(\d{2})$/);
+                    if (match) {
+                      const d = new Date();
+                      d.setHours(parseInt(match[1]), parseInt(match[2]), 0, 0);
+                      setCustomTime(d);
+                    }
+                  }}
+                />
+                <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 4 }}>
+                  24hr format — e.g. 14:30 for 2:30 PM
+                </Text>
+              </View>
+            )}
+          </Card>
 
           {/* Confirm & Log */}
           <TouchableOpacity

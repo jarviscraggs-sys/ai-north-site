@@ -41,12 +41,25 @@ func loadGlucoseData() -> GlucoseData {
         return GlucoseData.placeholder
     }
     
-    let value = defaults.double(forKey: "glucose_value")
-    let trend = defaults.string(forKey: "glucose_trend") ?? "stable"
-    let timestamp = defaults.double(forKey: "glucose_timestamp")
-    let source = defaults.string(forKey: "glucose_source") ?? "unknown"
+    // react-native-shared-group-preferences stores a JSON string under the key
+    guard let jsonString = defaults.string(forKey: "glucoseData"),
+          let jsonData = jsonString.data(using: .utf8),
+          let dict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+        // Fallback: try individual keys (direct UserDefaults writes)
+        let value = defaults.double(forKey: "glucose_value")
+        if value == 0 { return GlucoseData.placeholder }
+        let trend = defaults.string(forKey: "glucose_trend") ?? "stable"
+        let timestamp = defaults.double(forKey: "glucose_timestamp")
+        let source = defaults.string(forKey: "glucose_source") ?? "unknown"
+        return GlucoseData(value: value, trend: trend, timestamp: timestamp, source: source)
+    }
     
+    let value = (dict["glucose_value"] as? NSNumber)?.doubleValue ?? 0
     if value == 0 { return GlucoseData.placeholder }
+    
+    let trend = dict["glucose_trend"] as? String ?? "stable"
+    let timestamp = (dict["glucose_timestamp"] as? NSNumber)?.doubleValue ?? 0
+    let source = dict["glucose_source"] as? String ?? "unknown"
     
     return GlucoseData(value: value, trend: trend, timestamp: timestamp, source: source)
 }

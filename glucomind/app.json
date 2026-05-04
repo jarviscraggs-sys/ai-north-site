@@ -46,6 +46,7 @@
     },
     "scheme": "glucomind",
     "plugins": [
+      ["@bacons/apple-targets", { "appleTeamId": "6DFM687BVS" }],
       "expo-router",
       "expo-sqlite",
       "expo-font",

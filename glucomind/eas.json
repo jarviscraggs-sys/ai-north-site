@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 15.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "credentialsSource": "remote",
+      "ios": {
+        "appExtensions": [
+          {
+            "targetName": "GlucoMindWidget",
+            "bundleIdentifier": "com.glucomind.app.GlucoMindWidget",
+            "entitlements": {
+              "com.apple.security.application-groups": ["group.com.glucomind.app.widget"]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "dayne.craggs@aol.co.uk",
+        "ascAppId": "6764888963",
+        "appleTeamId": "6DFM687BVS",
+        "ascApiKeyPath": "./AuthKey_QRMB8Z3MHZ.p8",
+        "ascApiKeyId": "QRMB8Z3MHZ",
+        "ascApiKeyIssuerId": "ffba489a-419d-4cc5-98b2-7189576ac86e"
+      }
+    }
+  }
+}

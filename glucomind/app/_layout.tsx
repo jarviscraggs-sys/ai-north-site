@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
@@ -46,35 +46,51 @@ export default function RootLayout() {
   }, []);
 
 
-  // Add notification response handler for deep links
+  // Handle notification deep links (both warm and cold launch)
+  const handleNotificationRoute = useCallback((data: any) => {
+    if (!data?.screen) return;
+    // Small delay to ensure navigator is mounted
+    setTimeout(() => {
+      switch (data.screen) {
+        case 'log-meal':
+          router.push({
+            pathname: '/log-meal',
+            params: {
+              prefillDesc: data.prefillDesc ?? '',
+              prefillCarbs: data.prefillCarbs ?? '',
+            },
+          });
+          break;
+        case 'log-insulin':
+          router.push('/log-insulin');
+          break;
+        case 'chat':
+          router.push('/(tabs)/chat');
+          break;
+        case 'index':
+          router.push('/(tabs)');
+          break;
+      }
+    }, 300);
+  }, [router]);
+
+  // Listener for taps when app is already open (warm launch)
   useEffect(() => {
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data as any;
-      if (data?.screen) {
-        switch (data.screen) {
-          case 'log-meal':
-            router.push({
-              pathname: '/log-meal',
-              params: {
-                prefillDesc: data.prefillDesc ?? '',
-                prefillCarbs: data.prefillCarbs ?? '',
-              },
-            });
-            break;
-          case 'log-insulin':
-            router.push('/log-insulin');
-            break;
-          case 'chat':
-            router.push('/(tabs)/chat');
-            break;
-          case 'index':
-            router.push('/(tabs)');
-            break;
-        }
-      }
+      handleNotificationRoute(response.notification.request.content.data);
     });
     return () => responseListener.remove();
-  }, [router]);
+  }, [handleNotificationRoute]);
+
+  // Handle cold launch — app opened by tapping a notification when fully closed
+  useEffect(() => {
+    if (!ready) return;
+    Notifications.getLastNotificationResponseAsync().then(response => {
+      if (response) {
+        handleNotificationRoute(response.notification.request.content.data);
+      }
+    });
+  }, [ready, handleNotificationRoute]);
 
   // Navigate once ready — small timeout ensures navigator is mounted
   useEffect(() => {

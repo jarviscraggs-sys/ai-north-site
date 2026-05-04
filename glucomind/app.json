@@ -18,7 +18,8 @@
       "infoPlist": {
         "NSHealthShareUsageDescription": "GlucoMind reads your glucose, heart rate, steps, and sleep data from Apple Health to provide personalised diabetes management insights.",
         "NSHealthUpdateUsageDescription": "GlucoMind may write health data summaries back to Apple Health.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["fetch", "remote-notification"]
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,

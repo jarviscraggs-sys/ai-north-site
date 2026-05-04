@@ -46,7 +46,6 @@
     },
     "scheme": "glucomind",
     "plugins": [
-      "@bacons/apple-targets",
       "expo-router",
       "expo-sqlite",
       "expo-font",

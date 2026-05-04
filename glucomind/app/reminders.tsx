@@ -37,6 +37,7 @@ export default function RemindersScreen() {
   const [newInsulinName, setNewInsulinName] = useState('Tresiba');
   const [newInsulinUnits, setNewInsulinUnits] = useState('');
   const [newInsulinType, setNewInsulinType] = useState<'rapid' | 'long'>('long');
+  const [newDurationDays, setNewDurationDays] = useState(0); // 0 = forever
 
   const loadReminders = useCallback(async () => {
     const r = await getReminders();
@@ -75,6 +76,7 @@ export default function RemindersScreen() {
       insulinName: newType === 'insulin' ? newInsulinName : undefined,
       insulinUnits: newType === 'insulin' && newInsulinUnits ? parseFloat(newInsulinUnits) : undefined,
       insulinType: newType === 'insulin' ? newInsulinType : undefined,
+      durationDays: newDurationDays,
     });
 
     setShowCreate(false);
@@ -92,6 +94,7 @@ export default function RemindersScreen() {
     setNewInsulinName('Tresiba');
     setNewInsulinUnits('');
     setNewInsulinType('long');
+    setNewDurationDays(0);
   };
 
   const handleDelete = (r: Reminder) => {
@@ -220,6 +223,32 @@ export default function RemindersScreen() {
             placeholderTextColor={Colors.textMuted} returnKeyType="done"
           />
 
+          {/* Duration */}
+          <Text style={styles.fieldLabel}>How long?</Text>
+          <View style={styles.typeRow}>
+            {[
+              { value: 0, label: 'Forever' },
+              { value: 7, label: '7 days' },
+              { value: 14, label: '14 days' },
+              { value: 30, label: '30 days' },
+              { value: 90, label: '90 days' },
+            ].map(d => (
+              <TouchableOpacity
+                key={d.value}
+                style={[styles.typeChip, newDurationDays === d.value && styles.typeChipActive]}
+                onPress={() => setNewDurationDays(d.value)}
+              >
+                <Text style={[styles.typeChipText, newDurationDays === d.value && styles.typeChipTextActive]}>{d.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {newDurationDays === 0 && (
+            <Text style={{ color: Colors.textMuted, fontSize: 11, marginTop: 4 }}>Active until you turn it off or delete it</Text>
+          )}
+          {newDurationDays > 0 && (
+            <Text style={{ color: Colors.textMuted, fontSize: 11, marginTop: 4 }}>Will auto-stop after {newDurationDays} days</Text>
+          )}
+
           <TouchableOpacity style={styles.createBtn} onPress={handleCreate}>
             <Ionicons name="alarm" size={18} color={Colors.background} />
             <Text style={styles.createBtnText}>Set Reminder</Text>
@@ -254,6 +283,13 @@ export default function RemindersScreen() {
                     {r.insulinUnits ? `${r.insulinUnits}u ` : ''}{r.insulinName} ({r.insulinType})
                   </Text>
                 )}
+                <Text style={styles.reminderMeta}>
+                  {r.durationDays === 0 ? '∞ Active until changed' : (() => {
+                    if (!r.expiresAt) return `${r.durationDays} days`;
+                    const daysLeft = Math.max(0, Math.ceil((r.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
+                    return daysLeft > 0 ? `${daysLeft} days remaining` : 'Expired';
+                  })()}
+                </Text>
               </View>
             </View>
             <Switch

@@ -25,6 +25,9 @@ export interface Reminder {
   insulinUnits?: number;
   insulinType?: 'rapid' | 'long';
   notificationId?: string; // expo notification identifier for cancellation
+  // Duration: 0 = forever ("until I change it"), >0 = number of days
+  durationDays: number;
+  expiresAt?: number | null; // Unix ms, null = never
   createdAt: number;
 }
 
@@ -57,6 +60,8 @@ export async function initRemindersTable(): Promise<void> {
       insulin_units REAL,
       insulin_type TEXT,
       notification_id TEXT,
+      duration_days INTEGER NOT NULL DEFAULT 0,
+      expires_at INTEGER,
       created_at INTEGER NOT NULL
     );
   `);
@@ -67,6 +72,7 @@ export async function initRemindersTable(): Promise<void> {
 export async function getReminders(): Promise<Reminder[]> {
   const db = await getDB();
   const rows = await db.getAllAsync('SELECT * FROM reminders ORDER BY hour ASC, minute ASC');
+  const now = Date.now();
   return (rows as any[]).map(r => ({
     id: r.id,
     title: r.title,
@@ -79,20 +85,25 @@ export async function getReminders(): Promise<Reminder[]> {
     insulinUnits: r.insulin_units ?? undefined,
     insulinType: r.insulin_type ?? undefined,
     notificationId: r.notification_id ?? undefined,
+    durationDays: r.duration_days ?? 0,
+    expiresAt: r.expires_at ?? null,
     createdAt: r.created_at,
   }));
 }
 
-export async function createReminder(reminder: Omit<Reminder, 'id' | 'notificationId' | 'createdAt'>): Promise<Reminder> {
+export async function createReminder(reminder: Omit<Reminder, 'id' | 'notificationId' | 'createdAt' | 'expiresAt'>): Promise<Reminder> {
   const db = await getDB();
   const now = Date.now();
+  const expiresAt = reminder.durationDays > 0
+    ? now + reminder.durationDays * 24 * 60 * 60 * 1000
+    : null;
 
   // Schedule the notification
   const notificationId = await scheduleReminderNotification(reminder);
 
   const result = await db.runAsync(
-    `INSERT INTO reminders (title, message, hour, minute, enabled, type, insulin_name, insulin_units, insulin_type, notification_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO reminders (title, message, hour, minute, enabled, type, insulin_name, insulin_units, insulin_type, notification_id, duration_days, expires_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       reminder.title,
       reminder.message,
@@ -104,6 +115,8 @@ export async function createReminder(reminder: Omit<Reminder, 'id' | 'notificati
       reminder.insulinUnits ?? null,
       reminder.insulinType ?? null,
       notificationId,
+      reminder.durationDays,
+      expiresAt,
       now,
     ]
   );
@@ -112,6 +125,7 @@ export async function createReminder(reminder: Omit<Reminder, 'id' | 'notificati
     ...reminder,
     id: result.lastInsertRowId,
     notificationId,
+    expiresAt,
     createdAt: now,
   };
 }
@@ -207,17 +221,27 @@ async function scheduleReminderNotification(reminder: {
  */
 export async function rescheduleAllReminders(): Promise<void> {
   const reminders = await getReminders();
+  const now = Date.now();
+  const db = await getDB();
+
   for (const r of reminders) {
+    // Auto-expire reminders that have passed their duration
+    if (r.expiresAt && now > r.expiresAt && r.enabled) {
+      if (r.notificationId) {
+        try { await Notifications.cancelScheduledNotificationAsync(r.notificationId); } catch {}
+      }
+      await db.runAsync('UPDATE reminders SET enabled = 0, notification_id = NULL WHERE id = ?', [r.id]);
+      continue;
+    }
+
     if (!r.enabled) continue;
+
     // Cancel old notification if exists
     if (r.notificationId) {
-      try {
-        await Notifications.cancelScheduledNotificationAsync(r.notificationId);
-      } catch {}
+      try { await Notifications.cancelScheduledNotificationAsync(r.notificationId); } catch {}
     }
     // Re-schedule
     const newId = await scheduleReminderNotification(r);
-    const db = await getDB();
     await db.runAsync('UPDATE reminders SET notification_id = ? WHERE id = ?', [newId, r.id]);
   }
 }

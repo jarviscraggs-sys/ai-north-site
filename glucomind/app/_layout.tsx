@@ -7,6 +7,7 @@ import { initDatabase, getAppState, getSetting } from '../services/database';
 // Demo data removed — using real HealthKit data only
 import { requestNotificationPermissions } from '../services/notifications';
 import { registerBackgroundSync } from '../services/background-sync';
+import { initRemindersTable, rescheduleAllReminders } from '../services/reminders';
 import { Colors } from '../constants/colors';
 import { getCurrentUser, fetchProfile } from '../services/supabase';
 
@@ -22,6 +23,8 @@ export default function RootLayout() {
         // No demo data — real HealthKit data only
         await requestNotificationPermissions();
         await registerBackgroundSync();
+        await initRemindersTable();
+        await rescheduleAllReminders();
 
         const user = await getCurrentUser();
         if (!user) {

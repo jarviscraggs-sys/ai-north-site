@@ -45,6 +45,7 @@ import {
   sendSpikeAlert, sendHighAlert, sendLowAlert,
   sendSpikePrompt, sendHighWithPrompt, sendLowWithPrompt,
 } from './notifications';
+import { predictHypo } from './hypo-prediction';
 import { GlucoseReading } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -474,7 +475,19 @@ async function checkAlerts(reading: GlucoseReading): Promise<void> {
     const hasRecentMeal = recentMeals.length > 0;
     const hasRecentInsulin = recentInsulin.length > 0;
 
-    // ── LOW GLUCOSE ──────────────────────────────────────────────────
+    // ── HYPO PREDICTION ───────────────────────────────────────────────
+    // Predict low BEFORE it happens
+    try {
+      const prediction = await predictHypo();
+      if (prediction.predicted && prediction.severity !== 'none') {
+        if (now - _lastLowAlert > 15 * 60 * 1000) {
+          await sendLowWithPrompt(reading.value);
+          _lastLowAlert = now;
+        }
+      }
+    } catch {}
+
+    // ── LOW GLUCOSE (already low) ──────────────────────────────────────
     // Critical: prompt to eat fast carbs
     if (reading.value < settings.target_low && settings.notify_low) {
       if (now - _lastLowAlert > 15 * 60 * 1000) {

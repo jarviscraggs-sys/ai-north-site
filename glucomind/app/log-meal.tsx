@@ -14,6 +14,7 @@ import { suggestDose } from '../services/carb-ratio';
 import { calculateIOB, getIOBWarning } from '../services/iob';
 import { IOBResult } from '../types';
 import Card from '../components/Card';
+import { searchFood, FoodSearchResult } from '../services/nutrition-search';
 
 const CATEGORIES: Meal['category'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
@@ -30,7 +31,7 @@ const GI_COLORS: Record<string, string> = {
   high: '#FF3B5C',
 };
 
-type Screen = 'input' | 'questions' | 'results' | 'logged';
+type Screen = 'input' | 'questions' | 'results' | 'logged' | 'manual' | 'search';
 
 export default function LogMeal() {
   const params = useLocalSearchParams<{ prefillCarbs?: string; prefillDesc?: string }>();
@@ -66,6 +67,17 @@ export default function LogMeal() {
   const [logInsulinWithMeal, setLogInsulinWithMeal] = useState(false);
   const [insulinUnits, setInsulinUnits] = useState('');
   const [insulinType, setInsulinType] = useState<'rapid' | 'long'>('rapid');
+
+  // Manual entry state
+  const [manualCarbs, setManualCarbs] = useState('');
+  const [manualFat, setManualFat] = useState('');
+  const [manualProtein, setManualProtein] = useState('');
+  const [manualCalories, setManualCalories] = useState('');
+
+  // Food search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
 
   // Logging state
   const [saving, setSaving] = useState(false);
@@ -142,7 +154,15 @@ export default function LogMeal() {
       }
     } catch (e) {
       console.error('Meal analysis error:', e);
-      Alert.alert('Analysis failed', 'Could not analyse your meal. Please try again or log manually.');
+      Alert.alert(
+        'AI Analysis Failed',
+        'Could not analyse this meal automatically. You can enter the macros manually or search the food database.',
+        [
+          { text: 'Enter Manually', onPress: () => setScreen('manual') },
+          { text: 'Search Database', onPress: () => { setSearchQuery(description.trim()); setScreen('search'); } },
+          { text: 'Try Again', style: 'cancel' },
+        ]
+      );
     } finally {
       setAnalyzing(false);
     }
@@ -271,10 +291,224 @@ export default function LogMeal() {
     setMealInsight(null);
     setAnswers([]);
     setCurrentQuestionIndex(0);
+    setManualCarbs('');
+    setManualFat('');
+    setManualProtein('');
+    setManualCalories('');
+    setSearchResults([]);
+    setSearchQuery('');
     setScreen('input');
   };
 
+  const handleManualSubmit = async () => {
+    const carbs = parseFloat(manualCarbs) || 0;
+    const fat = parseFloat(manualFat) || 0;
+    const protein = parseFloat(manualProtein) || 0;
+    const calories = parseFloat(manualCalories) || Math.round(carbs * 4 + fat * 9 + protein * 4);
+    const desc = description.trim() || 'Manual entry';
+
+    const manualAnalysis: MealAnalysis = {
+      items: [{ name: desc, portion: 'as entered', carbs, fat, protein, calories, fibre: 0 }],
+      totalCarbs: carbs,
+      totalFat: fat,
+      totalProtein: protein,
+      totalCalories: calories,
+      glycemicIndex: 'medium',
+      questions: [],
+      glucoseImpact: {
+        estimatedRise: carbs * 0.05,
+        timeToPeak: 60,
+        durationHours: 2,
+        isHighFat: fat > 20,
+        delayedSpikeRisk: fat > 20,
+      },
+      managementTips: { preBolus: 15, splitBolus: fat > 20, splitBolusExplanation: 'High fat meal may delay absorption', tips: [] },
+      source: 'manual',
+    };
+    setAnalysis(manualAnalysis);
+    if (!description.trim()) setDescription(desc);
+    await loadDoseSuggestion(carbs);
+    setScreen('results');
+    fadeIn();
+  };
+
+  const handleFoodSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const results = await searchFood(searchQuery.trim());
+      setSearchResults(results);
+    } catch (e) {
+      Alert.alert('Search failed', 'Could not search food database. Please try manual entry.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = async (food: FoodSearchResult) => {
+    const desc = food.brand ? `${food.name} (${food.brand})` : food.name;
+    setDescription(desc);
+    const searchAnalysis: MealAnalysis = {
+      items: [{ name: food.name, portion: food.servingSize, carbs: food.carbs, fat: food.fat, protein: food.protein, calories: food.calories, fibre: food.fibre }],
+      totalCarbs: food.carbs,
+      totalFat: food.fat,
+      totalProtein: food.protein,
+      totalCalories: food.calories,
+      glycemicIndex: food.carbs > 60 ? 'high' : food.carbs > 30 ? 'medium' : 'low',
+      questions: [],
+      glucoseImpact: {
+        estimatedRise: food.carbs * 0.05,
+        timeToPeak: 60,
+        durationHours: 2,
+        isHighFat: food.fat > 20,
+        delayedSpikeRisk: food.fat > 20,
+      },
+      managementTips: { preBolus: 15, splitBolus: food.fat > 20, splitBolusExplanation: 'High fat meal', tips: [] },
+      source: `database (${food.source})`,
+    };
+    setAnalysis(searchAnalysis);
+    await loadDoseSuggestion(food.carbs);
+    setScreen('results');
+    fadeIn();
+  };
+
   // ─── SCREENS ─────────────────────────────────────────────────────────────
+
+  if (screen === 'manual') {
+    const estimatedCals = Math.round(
+      (parseFloat(manualCarbs) || 0) * 4 +
+      (parseFloat(manualFat) || 0) * 9 +
+      (parseFloat(manualProtein) || 0) * 4
+    );
+    return (
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colors.surface }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Card>
+            <Text style={styles.cardTitle}>Food Name</Text>
+            <TextInput
+              style={[styles.textInput, { minHeight: 44 }]}
+              placeholder="e.g. McDonald's Big Mac"
+              placeholderTextColor={Colors.textMuted}
+              value={description}
+              onChangeText={setDescription}
+              returnKeyType="next"
+            />
+          </Card>
+
+          <Card style={{ gap: 16 }}>
+            <Text style={styles.cardTitle}>Nutritional Values (per serving)</Text>
+
+            <MacroInput label="Carbohydrates" unit="g" value={manualCarbs} onChange={setManualCarbs} color="#00BFA5" required />
+            <MacroInput label="Fat" unit="g" value={manualFat} onChange={setManualFat} color="#7C6FFF" />
+            <MacroInput label="Protein" unit="g" value={manualProtein} onChange={setManualProtein} color="#FFC107" />
+            <MacroInput
+              label="Calories"
+              unit="kcal"
+              value={manualCalories}
+              onChange={setManualCalories}
+              color="#FF8C69"
+              placeholder={estimatedCals > 0 ? `~${estimatedCals} (auto)` : 'optional'}
+            />
+          </Card>
+
+          {estimatedCals > 0 && !manualCalories && (
+            <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center' }}>
+              Calories will be estimated from macros: ~{estimatedCals} kcal
+            </Text>
+          )}
+
+          <TouchableOpacity
+            style={[styles.primaryButton, !manualCarbs && { opacity: 0.5 }]}
+            onPress={handleManualSubmit}
+            disabled={!manualCarbs}
+          >
+            <Ionicons name="checkmark" size={18} color={Colors.background} />
+            <Text style={styles.primaryButtonText}>Calculate &amp; Continue</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.ghostButton} onPress={() => setScreen('search')}>
+            <Text style={styles.ghostButtonText}>🔍 Search Food Database Instead</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ghostButton} onPress={() => setScreen('input')}>
+            <Text style={styles.ghostButtonText}>← Back</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  if (screen === 'search') {
+    return (
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colors.surface }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Card>
+            <Text style={styles.cardTitle}>Search Food Database</Text>
+            <Text style={{ color: Colors.textMuted, fontSize: 12, marginBottom: 12 }}>
+              Includes McDonald's, Greggs, Tesco, and millions of UK foods
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput
+                style={[styles.textInput, { flex: 1, minHeight: 44, borderWidth: 1, borderColor: Colors.cardBorder, borderRadius: 10, paddingHorizontal: 12 }]}
+                placeholder="e.g. McDonald's Big Mac"
+                placeholderTextColor={Colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleFoodSearch}
+                returnKeyType="search"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: Colors.primary, borderRadius: 10, width: 48, alignItems: 'center', justifyContent: 'center' }}
+                onPress={handleFoodSearch}
+                disabled={searching}
+              >
+                {searching
+                  ? <ActivityIndicator size="small" color={Colors.background} />
+                  : <Ionicons name="search" size={20} color={Colors.background} />}
+              </TouchableOpacity>
+            </View>
+          </Card>
+
+          {searchResults.length > 0 && (
+            <Card>
+              <Text style={styles.cardTitle}>{searchResults.length} Results</Text>
+              {searchResults.map((food, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.itemRow, idx > 0 && styles.itemRowBorder]}
+                  onPress={() => handleSelectSearchResult(food)}
+                >
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.itemName} numberOfLines={2}>{food.name}</Text>
+                    {food.brand && <Text style={styles.itemPortion}>{food.brand}</Text>}
+                    <Text style={{ color: Colors.textMuted, fontSize: 11 }}>{food.servingSize}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                    <Text style={{ color: '#00BFA5', fontWeight: '700', fontSize: 14 }}>{food.carbs}g carbs</Text>
+                    <Text style={{ color: Colors.textMuted, fontSize: 11 }}>{food.calories} kcal</Text>
+                    <Text style={{ color: Colors.textMuted, fontSize: 10, fontStyle: 'italic' }}>{food.source}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </Card>
+          )}
+
+          {searchResults.length === 0 && !searching && searchQuery && (
+            <Card>
+              <Text style={{ color: Colors.textMuted, textAlign: 'center', fontSize: 14 }}>No results found. Try a different search or enter macros manually.</Text>
+            </Card>
+          )}
+
+          <TouchableOpacity style={styles.ghostButton} onPress={() => setScreen('manual')}>
+            <Text style={styles.ghostButtonText}>✏️ Enter Macros Manually Instead</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ghostButton} onPress={() => setScreen('input')}>
+            <Text style={styles.ghostButtonText}>← Back</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   if (screen === 'logged') {
     return (
@@ -762,6 +996,30 @@ export default function LogMeal() {
           <Text style={styles.scanButtonText}>Scan Food with Camera</Text>
         </TouchableOpacity>
 
+        {/* Manual entry / food search */}
+        <View style={styles.orRow}>
+          <View style={styles.orLine} />
+          <Text style={styles.orText}>OR</Text>
+          <View style={styles.orLine} />
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            style={[styles.scanButton, { flex: 1 }]}
+            onPress={() => setScreen('search')}
+          >
+            <Ionicons name="search" size={16} color={Colors.primary} />
+            <Text style={[styles.scanButtonText, { fontSize: 13 }]}>Search Database</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.scanButton, { flex: 1 }]}
+            onPress={() => setScreen('manual')}
+          >
+            <Ionicons name="create-outline" size={16} color={Colors.primary} />
+            <Text style={[styles.scanButtonText, { fontSize: 13 }]}>Enter Macros</Text>
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -828,6 +1086,43 @@ function SmartPredictionCard({ insight }: { insight: import('../services/meal-in
       <Text style={predictionStyles.timingAdvice}>{insight.timingAdvice}</Text>
       <Text style={predictionStyles.sampleSize}>Based on {insight.similarMealsCount} similar meals</Text>
     </Card>
+  );
+}
+
+function MacroInput({ label, unit, value, onChange, color, required, placeholder }: {
+  label: string; unit: string; value: string; onChange: (v: string) => void;
+  color: string; required?: boolean; placeholder?: string;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
+        <Text style={{ color: Colors.textSecondary, fontSize: 14, fontWeight: '600' }}>
+          {label}{required ? ' *' : ''}
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <TextInput
+          style={{
+            backgroundColor: Colors.cardBorder,
+            color: Colors.textPrimary,
+            borderRadius: 10,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            fontSize: 18,
+            fontWeight: '700',
+            minWidth: 80,
+            textAlign: 'center',
+          }}
+          value={value}
+          onChangeText={onChange}
+          keyboardType="decimal-pad"
+          placeholder={placeholder ?? '0'}
+          placeholderTextColor={Colors.textMuted}
+        />
+        <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: '600', width: 28 }}>{unit}</Text>
+      </View>
+    </View>
   );
 }
 

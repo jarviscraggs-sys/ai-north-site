@@ -46,6 +46,7 @@ import {
   sendSpikePrompt, sendHighWithPrompt, sendLowWithPrompt,
 } from './notifications';
 import { predictHypo } from './hypo-prediction';
+import { updateWidget } from './widget-bridge';
 import { GlucoseReading } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -535,6 +536,16 @@ async function checkAlerts(reading: GlucoseReading): Promise<void> {
     }
 
     _lastValue = reading.value;
+
+    // Update home screen widget with latest reading
+    try {
+      await updateWidget({
+        value: reading.value,
+        trend: reading.trend,
+        timestamp: reading.timestamp,
+        source: reading.source ?? 'unknown',
+      });
+    } catch {}
   } catch (err) {
     console.error('[Sync] Alert check error:', err);
   }

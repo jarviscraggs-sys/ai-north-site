@@ -495,7 +495,7 @@ async function checkAlerts(reading: GlucoseReading): Promise<void> {
 // ─── Foreground Interval Manager ─────────────────────────────────────────────
 
 let _syncInterval: ReturnType<typeof setInterval> | null = null;
-const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const SYNC_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes — tighter sync for real-time feel
 
 /**
  * Start background-style periodic sync using a foreground interval.

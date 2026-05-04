@@ -36,11 +36,18 @@ Skills define _how_ tools work. This file is for _your_ specifics — the stuff 
 - Region: eu-west-2 (London)
 - Account: GitHub login (jarviscraggs-sys)
 
-## Dexcom Share (GlucoMind — Primary Data Source)
-- Email: dayne.craggs@aol.co.uk
+## Dexcom Share (GlucoMind — Primary Data Source) ✅ WORKING
+- Username: daynecraggs123
 - Password: Guswinnie123*
 - Region: EU/UK (shareous1.dexcom.com)
-- Status: Waiting for Dexcom Share server outage to resolve
+- Account ID: 3aaacf60-a235-4e72-b0e4-53d3968c7b4d
+- Status: LIVE — pulling real CGM data
+- Note: Username is NOT the email — it's the Dexcom username
+
+## Dexcom Follower Account
+- Email: jarviscraggs@gmail.com
+- Password: Pureglow123!
+- Role: Follower (can see data in Follow app but not via Share API)
 
 ## Dexcom API (GlucoMind)
 - Client ID: `oulQCboievxUTiefZYua65910YuvUSsu`

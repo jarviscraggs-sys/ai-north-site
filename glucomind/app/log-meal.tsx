@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { Meal, DoseSuggestion, MealAnalysis } from '../types';
-import { insertMeal, getMeals, getLatestGlucoseReading } from '../services/database';
+import { insertMeal, insertInsulinDose, getMeals, getLatestGlucoseReading } from '../services/database';
 import { getPersonalisedMealInsight, MealInsight } from '../services/meal-intelligence';
 import { analyzeMeal, refineAnalysis } from '../services/meal-analyzer';
 import { suggestDose } from '../services/carb-ratio';
@@ -61,6 +61,11 @@ export default function LogMeal() {
 
   // Meal intelligence
   const [mealInsight, setMealInsight] = useState<MealInsight | null>(null);
+
+  // Inline insulin logging
+  const [logInsulinWithMeal, setLogInsulinWithMeal] = useState(false);
+  const [insulinUnits, setInsulinUnits] = useState('');
+  const [insulinType, setInsulinType] = useState<'rapid' | 'long'>('rapid');
 
   // Logging state
   const [saving, setSaving] = useState(false);
@@ -207,7 +212,7 @@ export default function LogMeal() {
     setSaving(true);
     try {
       const now = useCustomTime ? customTime.getTime() : Date.now();
-      await insertMeal({
+      const mealId = await insertMeal({
         description: description.trim(),
         carbs_estimate: analysis.totalCarbs,
         category,
@@ -220,11 +225,25 @@ export default function LogMeal() {
         glucose_impact_estimate: analysis.glucoseImpact.estimatedRise,
       });
 
+      // Log linked insulin if provided
+      if (logInsulinWithMeal && insulinUnits) {
+        const u = parseFloat(insulinUnits);
+        if (!isNaN(u) && u > 0) {
+          await insertInsulinDose({
+            type: insulinType,
+            units: u,
+            timestamp: now,
+            meal_id: mealId,
+          });
+        }
+      }
+
       // Smart push: schedule post-meal check and missed bolus prompt if relevant
       try {
         const { sendPostMealCheckPrompt, sendMissedBoluPrompt } = await import('../services/notifications');
         await sendPostMealCheckPrompt(description.trim(), now);
-        if (analysis.totalCarbs > 30) {
+        // Only prompt for missed bolus if they didn't log insulin with the meal
+        if (analysis.totalCarbs > 30 && !logInsulinWithMeal) {
           await sendMissedBoluPrompt(description.trim(), analysis.totalCarbs);
         }
       } catch(e) {
@@ -508,6 +527,77 @@ export default function LogMeal() {
               ))}
             </View>
           </View>
+
+          {/* Log insulin with this meal */}
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="medical" size={18} color={Colors.amber} />
+                <Text style={styles.cardTitle}>Log Insulin</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setLogInsulinWithMeal(!logInsulinWithMeal)}
+                style={{ paddingVertical: 4, paddingHorizontal: 12, borderRadius: 8, backgroundColor: logInsulinWithMeal ? Colors.primary + '15' : Colors.cardBorder }}
+              >
+                <Text style={{ color: logInsulinWithMeal ? Colors.primary : Colors.textSecondary, fontWeight: '600', fontSize: 13 }}>
+                  {logInsulinWithMeal ? 'Yes' : 'No'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {logInsulinWithMeal && (
+              <View style={{ marginTop: 12, gap: 12 }}>
+                {/* Type toggle */}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: insulinType === 'rapid' ? Colors.amber + '15' : Colors.cardBorder, borderWidth: 1, borderColor: insulinType === 'rapid' ? Colors.amber + '44' : 'transparent' }}
+                    onPress={() => setInsulinType('rapid')}
+                  >
+                    <Text style={{ color: insulinType === 'rapid' ? Colors.amber : Colors.textSecondary, fontWeight: '600', fontSize: 13 }}>Rapid</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: insulinType === 'long' ? Colors.amber + '15' : Colors.cardBorder, borderWidth: 1, borderColor: insulinType === 'long' ? Colors.amber + '44' : 'transparent' }}
+                    onPress={() => setInsulinType('long')}
+                  >
+                    <Text style={{ color: insulinType === 'long' ? Colors.amber : Colors.textSecondary, fontWeight: '600', fontSize: 13 }}>Long-acting</Text>
+                  </TouchableOpacity>
+                </View>
+                {/* Units with 0.5 step */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                  <TouchableOpacity
+                    style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.cardBorder, alignItems: 'center', justifyContent: 'center' }}
+                    onPress={() => setInsulinUnits(prev => Math.max(0, (parseFloat(prev) || 0) - 0.5).toString())}
+                  >
+                    <Ionicons name="remove" size={20} color={Colors.textPrimary} />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={{ fontSize: 28, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', minWidth: 60 }}
+                    value={insulinUnits}
+                    onChangeText={setInsulinUnits}
+                    keyboardType="decimal-pad"
+                    placeholder="0"
+                    placeholderTextColor={Colors.textMuted}
+                  />
+                  <TouchableOpacity
+                    style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary + '22', alignItems: 'center', justifyContent: 'center' }}
+                    onPress={() => setInsulinUnits(prev => ((parseFloat(prev) || 0) + 0.5).toString())}
+                  >
+                    <Ionicons name="add" size={20} color={Colors.primary} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center' }}>units (0.5 increments)</Text>
+                {doseSuggestion && (
+                  <TouchableOpacity
+                    onPress={() => setInsulinUnits(doseSuggestion.totalDose.toFixed(1))}
+                    style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: Colors.primary + '15' }}
+                  >
+                    <Text style={{ color: Colors.primary, fontWeight: '600', fontSize: 13 }}>
+                      Use suggested dose: {doseSuggestion.totalDose.toFixed(1)}u
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </Card>
 
           {/* When did you eat? */}
           <Card>

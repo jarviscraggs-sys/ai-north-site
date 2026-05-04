@@ -30,6 +30,27 @@ import {
   exchangeCodeForTokens,
   clearTokens,
 } from '../services/dexcom';
+import {
+  isShareConnected,
+  getShareLastSync,
+  testShareCredentials,
+  saveShareCredentials,
+  clearShareCredentials,
+} from '../services/dexcom-share';
+import {
+  isNightscoutConnected,
+  getNightscoutLastSync,
+  testConnection as testNightscoutConnection,
+  saveNightscoutCredentials,
+  clearNightscoutCredentials,
+} from '../services/nightscout';
+import {
+  isTidepoolConnected,
+  getTidepoolLastSync,
+  testCredentials as testTidepoolCredentials,
+  saveTidepoolCredentials,
+  clearTidepoolCredentials,
+} from '../services/tidepool';
 import { initialSync } from '../services/sync';
 import { setSetting } from '../services/database';
 
@@ -181,22 +202,48 @@ export default function ConnectionsScreen() {
   const [hkConnected, setHkConnected] = useState(false);
   const [hkLoading, setHkLoading] = useState(false);
 
-  // Dexcom state
+  // Dexcom Share state
+  const [shareConnected, setShareConnected] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareLastSync, setShareLastSync] = useState<number | null>(null);
+
+  // Dexcom API state (legacy)
   const [dexConnected, setDexConnected] = useState(false);
   const [dexLoading, setDexLoading] = useState(false);
   const [dexLastSync, setDexLastSync] = useState<number | null>(null);
+
+  // Nightscout state
+  const [nsConnected, setNsConnected] = useState(false);
+  const [nsLoading, setNsLoading] = useState(false);
+  const [nsLastSync, setNsLastSync] = useState<number | null>(null);
+
+  // Tidepool state
+  const [tpConnected, setTpConnected] = useState(false);
+  const [tpLoading, setTpLoading] = useState(false);
+  const [tpLastSync, setTpLastSync] = useState<number | null>(null);
 
   // Always show HealthKit as available on iOS builds — the native check
   // may fail in some EAS builds but permissions still work
   const hkAvailable = Platform.OS === 'ios' || isHealthKitAvailable();
 
   const loadStatuses = useCallback(async () => {
-    // HealthKit — we optimistically consider it connected if available + iOS
-    // In a real build, you'd persist a "permissions granted" flag
-    // For now, reflect platform availability only
-    setHkConnected(false); // Will update after permission check below
+    // HealthKit
+    setHkConnected(false);
 
-    // Dexcom
+    // Dexcom Share
+    try {
+      const [sc, sSync] = await Promise.all([
+        isShareConnected(),
+        getShareLastSync(),
+      ]);
+      setShareConnected(sc);
+      setShareLastSync(sSync);
+    } catch {
+      setShareConnected(false);
+      setShareLastSync(null);
+    }
+
+    // Dexcom API
     try {
       const [dexConn, dexSync] = await Promise.all([
         dexcomIsConnected(),
@@ -207,6 +254,32 @@ export default function ConnectionsScreen() {
     } catch {
       setDexConnected(false);
       setDexLastSync(null);
+    }
+
+    // Nightscout
+    try {
+      const [nsConn, nsSync] = await Promise.all([
+        isNightscoutConnected(),
+        getNightscoutLastSync(),
+      ]);
+      setNsConnected(nsConn);
+      setNsLastSync(nsSync);
+    } catch {
+      setNsConnected(false);
+      setNsLastSync(null);
+    }
+
+    // Tidepool
+    try {
+      const [tpConn, tpSync] = await Promise.all([
+        isTidepoolConnected(),
+        getTidepoolLastSync(),
+      ]);
+      setTpConnected(tpConn);
+      setTpLastSync(tpSync);
+    } catch {
+      setTpConnected(false);
+      setTpLastSync(null);
     }
   }, []);
 
@@ -252,15 +325,107 @@ export default function ConnectionsScreen() {
     );
   };
 
-  // ─── Dexcom Handlers ──────────────────────────────────────────────────────
+  // ─── Dexcom Share Handlers ────────────────────────────────────────────────
+
+  const handleConnectShare = () => {
+    Alert.prompt(
+      'Dexcom Share',
+      'Enter your Dexcom username (NOT email — the username from the Dexcom app)',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Next',
+          onPress: (username?: string) => {
+            if (!username || username.trim().length === 0) {
+              Alert.alert('Error', 'Please enter your Dexcom username.');
+              return;
+            }
+            promptSharePassword(username.trim());
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'default'
+    );
+  };
+
+  const promptSharePassword = (username: string) => {
+    Alert.prompt(
+      'Dexcom Password',
+      `Enter the password for ${username}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Connect',
+          onPress: async (password?: string) => {
+            if (!password || password.trim().length === 0) {
+              Alert.alert('Error', 'Please enter your Dexcom password.');
+              return;
+            }
+            setShareLoading(true);
+            try {
+              const result = await testShareCredentials(username, password.trim());
+              if (!result.success) {
+                Alert.alert(
+                  'Connection Failed',
+                  result.error ?? 'Could not connect to Dexcom Share. Check your username and password.'
+                );
+                return;
+              }
+              await saveShareCredentials(username, password.trim());
+              await setSetting('data_source', 'dexcom-share');
+              await initialSync();
+              await loadStatuses();
+              Alert.alert(
+                'Dexcom Share Connected ✅',
+                `Live CGM data is now syncing! Found ${result.readings ?? 0} recent readings.`
+              );
+            } catch (err: any) {
+              Alert.alert(
+                'Connection Failed',
+                err?.message ?? 'Could not connect to Dexcom Share.'
+              );
+            } finally {
+              setShareLoading(false);
+            }
+          },
+        },
+      ],
+      'secure-text',
+      ''
+    );
+  };
+
+  const handleDisconnectShare = () => {
+    Alert.alert(
+      'Disconnect Dexcom Share',
+      'This will remove your Dexcom credentials and stop syncing CGM data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            await clearShareCredentials();
+            await setSetting('data_source', 'simulated');
+            setShareConnected(false);
+            setShareLastSync(null);
+          },
+        },
+      ]
+    );
+  };
+
+  // ─── Dexcom API Handlers (Legacy) ─────────────────────────────────────────
 
   const handleConnectDexcom = async () => {
     setDexLoading(true);
     try {
       const code = await launchDexcomAuth();
       await exchangeCodeForTokens(code);
-      await initialSync();
       await setSetting('data_source', 'dexcom');
+      await initialSync();
       await loadStatuses();
       Alert.alert(
         'Dexcom Connected ✅',
@@ -293,6 +458,192 @@ export default function ConnectionsScreen() {
     );
   };
 
+  // ─── Nightscout Handlers ────────────────────────────────────────────────────
+
+  const handleConnectNightscout = () => {
+    Alert.prompt(
+      'Connect Nightscout',
+      'Enter your Nightscout URL (e.g. https://mysite.herokuapp.com)',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Next',
+          onPress: (url?: string) => {
+            if (!url || url.trim().length === 0) {
+              Alert.alert('Error', 'Please enter a valid Nightscout URL.');
+              return;
+            }
+            promptNightscoutToken(url.trim());
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'url'
+    );
+  };
+
+  const promptNightscoutToken = (url: string) => {
+    Alert.prompt(
+      'API Token (Optional)',
+      'Enter your Nightscout API secret or token, or leave blank for public sites.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Connect',
+          onPress: async (token?: string) => {
+            setNsLoading(true);
+            try {
+              const result = await testNightscoutConnection(
+                url,
+                token && token.trim().length > 0 ? token.trim() : undefined
+              );
+              if (!result.success) {
+                Alert.alert(
+                  'Connection Failed',
+                  result.error ?? 'Could not reach your Nightscout site.'
+                );
+                return;
+              }
+              await saveNightscoutCredentials(
+                url,
+                token && token.trim().length > 0 ? token.trim() : undefined
+              );
+              await setSetting('data_source', 'nightscout');
+              await initialSync();
+              await loadStatuses();
+              Alert.alert(
+                'Nightscout Connected ✅',
+                `Connected to ${result.info?.name ?? 'Nightscout'} (v${result.info?.version ?? '?'}). Your CGM data is syncing.`
+              );
+            } catch (err: any) {
+              Alert.alert(
+                'Connection Failed',
+                err?.message ?? 'Could not connect to Nightscout.'
+              );
+            } finally {
+              setNsLoading(false);
+            }
+          },
+        },
+      ],
+      'plain-text',
+      ''
+    );
+  };
+
+  const handleDisconnectNightscout = () => {
+    Alert.alert(
+      'Disconnect Nightscout',
+      'This will remove your Nightscout credentials and switch back to demo mode.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            await clearNightscoutCredentials();
+            await setSetting('data_source', 'simulated');
+            setNsConnected(false);
+            setNsLastSync(null);
+          },
+        },
+      ]
+    );
+  };
+
+  // ─── Tidepool Handlers ──────────────────────────────────────────────────────
+
+  const handleConnectTidepool = () => {
+    Alert.prompt(
+      'Connect Tidepool',
+      'Enter your Tidepool email address',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Next',
+          onPress: (email?: string) => {
+            if (!email || email.trim().length === 0) {
+              Alert.alert('Error', 'Please enter your Tidepool email.');
+              return;
+            }
+            promptTidepoolPassword(email.trim());
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'email-address'
+    );
+  };
+
+  const promptTidepoolPassword = (email: string) => {
+    Alert.prompt(
+      'Tidepool Password',
+      `Enter the password for ${email}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Connect',
+          onPress: async (password?: string) => {
+            if (!password || password.trim().length === 0) {
+              Alert.alert('Error', 'Please enter your Tidepool password.');
+              return;
+            }
+            setTpLoading(true);
+            try {
+              const result = await testTidepoolCredentials(email, password.trim());
+              if (!result.success || !result.session) {
+                Alert.alert(
+                  'Connection Failed',
+                  result.error ?? 'Could not log in to Tidepool.'
+                );
+                return;
+              }
+              await saveTidepoolCredentials(email, password.trim(), result.session);
+              await setSetting('data_source', 'tidepool');
+              await initialSync();
+              await loadStatuses();
+              Alert.alert(
+                'Tidepool Connected ✅',
+                'Your glucose data is now syncing from Tidepool.'
+              );
+            } catch (err: any) {
+              Alert.alert(
+                'Connection Failed',
+                err?.message ?? 'Could not connect to Tidepool.'
+              );
+            } finally {
+              setTpLoading(false);
+            }
+          },
+        },
+      ],
+      'secure-text',
+      ''
+    );
+  };
+
+  const handleDisconnectTidepool = () => {
+    Alert.alert(
+      'Disconnect Tidepool',
+      'This will remove your Tidepool credentials and switch back to demo mode.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            await clearTidepoolCredentials();
+            await setSetting('data_source', 'simulated');
+            setTpConnected(false);
+            setTpLastSync(null);
+          },
+        },
+      ]
+    );
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -307,6 +658,21 @@ export default function ConnectionsScreen() {
 
       {/* ── Active Connections ── */}
       <Text style={styles.sectionLabel}>Active Connections</Text>
+
+      {/* Dexcom Share — Primary CGM source */}
+      <ConnectionCard
+        icon="pulse"
+        iconColor="#22C55E"
+        name="Dexcom Share"
+        description="Live CGM data directly from Dexcom (recommended)"
+        status={shareConnected ? 'connected' : 'disconnected'}
+        dataTypes={shareConnected ? ['Glucose', 'Trend'] : undefined}
+        lastSync={shareLastSync}
+        statusMessage={shareConnected ? 'Receiving live glucose readings' : 'Connect with your Dexcom username & password'}
+        onConnect={handleConnectShare}
+        onDisconnect={handleDisconnectShare}
+        loading={shareLoading}
+      />
 
       {/* HealthKit */}
       <ConnectionCard
@@ -343,6 +709,44 @@ export default function ConnectionsScreen() {
         onConnect={handleConnectDexcom}
         onDisconnect={handleDisconnectDexcom}
         loading={dexLoading}
+      />
+
+      {/* Nightscout */}
+      <ConnectionCard
+        icon="globe-outline"
+        iconColor="#22C55E"
+        name="Nightscout"
+        description="Open-source CGM data from your Nightscout site"
+        status={nsConnected ? 'connected' : 'disconnected'}
+        dataTypes={nsConnected ? ['CGM Readings', 'Trend Data'] : undefined}
+        lastSync={nsConnected ? nsLastSync : null}
+        statusMessage={
+          nsConnected
+            ? 'Syncing glucose readings from your Nightscout instance'
+            : 'Connect to your self-hosted Nightscout site'
+        }
+        onConnect={handleConnectNightscout}
+        onDisconnect={handleDisconnectNightscout}
+        loading={nsLoading}
+      />
+
+      {/* Tidepool */}
+      <ConnectionCard
+        icon="water-outline"
+        iconColor="#0EA5E9"
+        name="Tidepool"
+        description="Sync glucose data from your Tidepool account"
+        status={tpConnected ? 'connected' : 'disconnected'}
+        dataTypes={tpConnected ? ['CGM Readings'] : undefined}
+        lastSync={tpConnected ? tpLastSync : null}
+        statusMessage={
+          tpConnected
+            ? 'Syncing glucose readings from Tidepool'
+            : 'Connect your Tidepool account to import CGM data'
+        }
+        onConnect={handleConnectTidepool}
+        onDisconnect={handleDisconnectTidepool}
+        loading={tpLoading}
       />
 
       {/* ── Coming Soon ── */}

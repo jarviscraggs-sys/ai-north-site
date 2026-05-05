@@ -8,6 +8,7 @@
  */
 
 import { Platform } from 'react-native';
+import { getSetting } from './database';
 
 const APP_GROUP = 'group.com.glucomind.app.widget';
 
@@ -36,6 +37,14 @@ export async function updateWidget(glucose: {
   source: string;
 }): Promise<void> {
   if (Platform.OS !== 'ios') return;
+
+  // Respect user preference — don't push data if widget is disabled
+  try {
+    const widgetEnabled = await getSetting('widget_enabled', 'true');
+    if (widgetEnabled === 'false') return;
+  } catch {
+    // If we can't read setting, default to pushing (widget on)
+  }
 
   loadBridge();
 

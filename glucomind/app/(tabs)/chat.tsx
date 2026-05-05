@@ -27,6 +27,8 @@ import {
   getFactorsSince, getAllSettings, getCorrelations,
   getDailyStats, getFactors, getInsulinDosesInRange,
   getMealsInRange, getGlucoseReadingsInRange,
+  getMealById, updateMeal, deleteMeal,
+  getInsulinDoseById, updateInsulinDose, deleteInsulinDose,
 } from '../../services/database';
 import { calculateIOB } from '../../services/iob';
 import { ChatMessage, GlucoseReading, Meal, Correlation } from '../../types';
@@ -242,20 +244,20 @@ async function buildSystemPrompt(): Promise<string> {
       mealTimeLines.push(`  ${slot}: avg ${avgCarbs.toFixed(0)}g carbs → avg +${avgSpike.toFixed(1)} mmol/L spike (${data.spikes.length} meals)`);
     }
 
-    // ── Recent Meals (last 20) ──
+    // ── Recent Meals (last 20) — include IDs so AI can reference them for edits ──
     const mealLines = recentMeals.slice(0, 10).map(m => {
       const h = Math.round((now - m.timestamp) / 3600000);
       const extras: string[] = [];
       if (m.gi_rating) extras.push(`GI:${m.gi_rating}`);
       if (m.fat) extras.push(`${m.fat}g fat`);
       if (m.protein) extras.push(`${m.protein}g protein`);
-      return `- ${m.description} (${m.carbs_estimate}g carbs${extras.length ? ', ' + extras.join(', ') : ''}, ${h}h ago)`;
+      return `- [id:${m.id}] ${m.description} (${m.carbs_estimate}g carbs${extras.length ? ', ' + extras.join(', ') : ''}, ${h}h ago)`;
     });
 
-    // ── Recent Insulin ──
+    // ── Recent Insulin — include IDs ──
     const insulinLines = recentInsulin.slice(0, 10).map(d => {
       const h = Math.round((now - d.timestamp) / 3600000);
-      return `- ${d.units}u ${d.type} (${h}h ago)`;
+      return `- [id:${d.id}] ${d.units}u ${d.type} (${h}h ago)`;
     });
 
     // ── 7d Insulin totals ──
@@ -331,6 +333,14 @@ ${factorSummary7d ? `7-day factor summary: ${factorSummary7d}` : ''}
 - Use mmol/L throughout.
 - Be warm, direct, and genuinely helpful — like a knowledgeable friend who happens to be a diabetes expert.
 
+═══ LOG EDITING ═══
+You can edit and delete meal and insulin entries using tool calls. Each meal/insulin entry has an [id:N] tag.
+- When the user asks to correct a meal (e.g. "that bread was actually 42g carbs"), use update_meal with the correct meal_id.
+- When the user asks to remove an entry, use delete_meal or delete_insulin.
+- ALWAYS confirm what you changed after making the edit (e.g. "Done — I've updated your sourdough bread to 42g carbs").
+- If you're unsure which entry they mean, ask them to clarify before making changes.
+- Never silently change entries — always tell the user what you did.
+
 ═══ COMPLIANCE & SAFETY ═══
 - NEVER prescribe specific insulin doses (e.g. never say "take 4 units now"). Instead say "your history suggests you may need a correction — discuss the right dose with your diabetes team".
 - NEVER diagnose conditions. Say "it looks like you may be experiencing dawn phenomenon" not "you have dawn phenomenon".
@@ -343,6 +353,120 @@ ${factorSummary7d ? `7-day factor summary: ${factorSummary7d}` : ''}
     console.error('buildSystemPrompt error', e);
     return `You are GlucoMind AI, a helpful diabetes management assistant for a Type 1 diabetic. \
 Use mmol/L. Be concise, practical, and warm.`;
+  }
+}
+
+// ─── Tool Definitions ─────────────────────────────────────────────────────────
+
+const chatTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'update_meal',
+      description: 'Update a meal entry in the user\'s food log. Use when the user asks to correct or change a logged meal (e.g. wrong carbs, wrong description). Always confirm what you\'re changing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          meal_id: { type: 'number', description: 'The ID of the meal to update' },
+          description: { type: 'string', description: 'New meal description (optional)' },
+          carbs: { type: 'number', description: 'New carbs in grams (optional)' },
+          fat: { type: 'number', description: 'New fat in grams (optional)' },
+          protein: { type: 'number', description: 'New protein in grams (optional)' },
+          calories: { type: 'number', description: 'New calories (optional)' },
+        },
+        required: ['meal_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_meal',
+      description: 'Delete a meal entry from the user\'s food log. Use when the user asks to remove a logged meal.',
+      parameters: {
+        type: 'object',
+        properties: {
+          meal_id: { type: 'number', description: 'The ID of the meal to delete' },
+        },
+        required: ['meal_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_insulin',
+      description: 'Update an insulin dose entry. Use when the user says they logged the wrong dose or type.',
+      parameters: {
+        type: 'object',
+        properties: {
+          dose_id: { type: 'number', description: 'The ID of the insulin dose to update' },
+          units: { type: 'number', description: 'New units (optional)' },
+          type: { type: 'string', enum: ['rapid', 'long'], description: 'New insulin type (optional)' },
+        },
+        required: ['dose_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_insulin',
+      description: 'Delete an insulin dose entry. Use when the user asks to remove a logged dose.',
+      parameters: {
+        type: 'object',
+        properties: {
+          dose_id: { type: 'number', description: 'The ID of the insulin dose to delete' },
+        },
+        required: ['dose_id'],
+      },
+    },
+  },
+];
+
+async function executeToolCall(name: string, args: any): Promise<string> {
+  try {
+    switch (name) {
+      case 'update_meal': {
+        const meal = await getMealById(args.meal_id);
+        if (!meal) return JSON.stringify({ error: 'Meal not found with that ID' });
+        const updates: any = {};
+        if (args.description !== undefined) updates.description = args.description;
+        if (args.carbs !== undefined) updates.carbs_estimate = args.carbs;
+        if (args.fat !== undefined) updates.fat = args.fat;
+        if (args.protein !== undefined) updates.protein = args.protein;
+        if (args.calories !== undefined) updates.calories = args.calories;
+        await updateMeal(args.meal_id, updates);
+        const updated = await getMealById(args.meal_id);
+        return JSON.stringify({ success: true, meal: updated });
+      }
+      case 'delete_meal': {
+        const meal = await getMealById(args.meal_id);
+        if (!meal) return JSON.stringify({ error: 'Meal not found with that ID' });
+        await deleteMeal(args.meal_id);
+        return JSON.stringify({ success: true, deleted: meal.description });
+      }
+      case 'update_insulin': {
+        const dose = await getInsulinDoseById(args.dose_id);
+        if (!dose) return JSON.stringify({ error: 'Insulin dose not found with that ID' });
+        const updates: any = {};
+        if (args.units !== undefined) updates.units = args.units;
+        if (args.type !== undefined) updates.type = args.type;
+        await updateInsulinDose(args.dose_id, updates);
+        const updated = await getInsulinDoseById(args.dose_id);
+        return JSON.stringify({ success: true, dose: updated });
+      }
+      case 'delete_insulin': {
+        const dose = await getInsulinDoseById(args.dose_id);
+        if (!dose) return JSON.stringify({ error: 'Insulin dose not found with that ID' });
+        await deleteInsulinDose(args.dose_id);
+        return JSON.stringify({ success: true, deleted: `${dose.units}u ${dose.type}` });
+      }
+      default:
+        return JSON.stringify({ error: `Unknown function: ${name}` });
+    }
+  } catch (e: any) {
+    return JSON.stringify({ error: e.message ?? 'Unknown error' });
   }
 }
 
@@ -458,15 +582,46 @@ export default function ChatScreen() {
         })),
       ];
 
-      const response = await openai.chat.completions.create({
+      let response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: apiMessages,
         max_tokens: 400,
         temperature: 0.7,
+        tools: chatTools,
       });
 
+      // Handle tool calls (may chain up to 3 times for multi-step edits)
+      let message = response.choices[0]?.message;
+      let toolLoops = 0;
+      while (message?.tool_calls && message.tool_calls.length > 0 && toolLoops < 3) {
+        toolLoops++;
+        // Add assistant message with tool calls
+        apiMessages.push(message as any);
+
+        // Execute each tool call and add results
+        for (const toolCall of message.tool_calls) {
+          const args = JSON.parse(toolCall.function.arguments);
+          const result = await executeToolCall(toolCall.function.name, args);
+          apiMessages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: result,
+          } as any);
+        }
+
+        // Get follow-up response
+        response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: apiMessages,
+          max_tokens: 400,
+          temperature: 0.7,
+          tools: chatTools,
+        });
+        message = response.choices[0]?.message;
+      }
+
       const replyContent =
-        response.choices[0]?.message?.content ??
+        message?.content ??
         "I'm having trouble connecting right now. Please try again.";
 
       const aiTs = Date.now();

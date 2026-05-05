@@ -789,6 +789,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 100,
     gap: 12,
   },
   sectionLabel: {

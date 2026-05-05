@@ -522,7 +522,15 @@ export default function LogMeal() {
             {description.trim()} — {analysis.totalCarbs}g carbs, {analysis.totalCalories} kcal
           </Text>
         )}
-        <TouchableOpacity style={styles.primaryButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => {
+          // Dismiss all stacked screens (input → questions → results → logged)
+          // and return cleanly to the tab the user came from
+          if (router.canDismiss()) {
+            router.dismissAll();
+          } else {
+            router.replace('/(tabs)');
+          }
+        }}>
           <Text style={styles.primaryButtonText}>Done</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.ghostButton} onPress={handleReset}>

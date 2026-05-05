@@ -79,6 +79,9 @@ export default function LogMeal() {
   const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
+  // Multi-item meal builder
+  const [mealItems, setMealItems] = useState<Array<{ description: string; analysis: MealAnalysis }>>([]);
+
   // Logging state
   const [saving, setSaving] = useState(false);
 
@@ -228,21 +231,27 @@ export default function LogMeal() {
   };
 
   const handleConfirmLog = async () => {
-    if (!analysis) return;
+    // Use combined analysis if multi-item, otherwise current analysis
+    const finalAnalysis = mealItems.length > 0 ? getCombinedAnalysis() : analysis;
+    if (!finalAnalysis) return;
     setSaving(true);
     try {
       const now = useCustomTime ? customTime.getTime() : Date.now();
+      // Build combined description
+      const allDescs = [...mealItems.map(i => i.description), description.trim()].filter(Boolean);
+      const finalDescription = allDescs.length > 1 ? allDescs.join(' + ') : (description.trim() || 'Meal');
+
       const mealId = await insertMeal({
-        description: description.trim(),
-        carbs_estimate: analysis.totalCarbs,
+        description: finalDescription,
+        carbs_estimate: finalAnalysis.totalCarbs,
         category,
         timestamp: now,
-        fat: analysis.totalFat,
-        protein: analysis.totalProtein,
-        calories: analysis.totalCalories,
-        fibre: 0, // summed from items if needed
-        gi_rating: analysis.glycemicIndex,
-        glucose_impact_estimate: analysis.glucoseImpact.estimatedRise,
+        fat: finalAnalysis.totalFat,
+        protein: finalAnalysis.totalProtein,
+        calories: finalAnalysis.totalCalories,
+        fibre: 0,
+        gi_rating: finalAnalysis.glycemicIndex,
+        glucose_impact_estimate: finalAnalysis.glucoseImpact.estimatedRise,
       });
 
       // Log linked insulin if provided
@@ -261,10 +270,10 @@ export default function LogMeal() {
       // Smart push: schedule post-meal check and missed bolus prompt if relevant
       try {
         const { sendPostMealCheckPrompt, sendMissedBoluPrompt } = await import('../services/notifications');
-        await sendPostMealCheckPrompt(description.trim(), now);
+        await sendPostMealCheckPrompt(finalDescription, now);
         // Only prompt for missed bolus if they didn't log insulin with the meal
-        if (analysis.totalCarbs > 30 && !logInsulinWithMeal) {
-          await sendMissedBoluPrompt(description.trim(), analysis.totalCarbs);
+        if (finalAnalysis.totalCarbs > 30 && !logInsulinWithMeal) {
+          await sendMissedBoluPrompt(finalDescription, finalAnalysis.totalCarbs);
         }
       } catch(e) {
         console.warn('Could not schedule smart notifications:', e);
@@ -284,6 +293,69 @@ export default function LogMeal() {
     setScreen('input');
   };
 
+  // Combine all queued items + current analysis into one combined MealAnalysis
+  const getCombinedAnalysis = useCallback((): MealAnalysis | null => {
+    const allEntries = [...mealItems];
+    if (analysis) allEntries.push({ description: description.trim(), analysis });
+    if (allEntries.length === 0) return null;
+
+    const combinedItems = allEntries.flatMap(e => e.analysis.items);
+    const totalCarbs = allEntries.reduce((s, e) => s + e.analysis.totalCarbs, 0);
+    const totalFat = allEntries.reduce((s, e) => s + e.analysis.totalFat, 0);
+    const totalProtein = allEntries.reduce((s, e) => s + e.analysis.totalProtein, 0);
+    const totalCalories = allEntries.reduce((s, e) => s + e.analysis.totalCalories, 0);
+    const isHighFat = totalFat > 20;
+
+    return {
+      items: combinedItems,
+      totalCarbs,
+      totalFat,
+      totalProtein,
+      totalCalories,
+      glycemicIndex: totalCarbs > 60 ? 'high' : totalCarbs > 30 ? 'medium' : 'low',
+      questions: [],
+      glucoseImpact: {
+        estimatedRise: totalCarbs * 0.05,
+        timeToPeak: 60,
+        durationHours: isHighFat ? 3 : 2,
+        isHighFat,
+        delayedSpikeRisk: isHighFat,
+      },
+      managementTips: {
+        preBolus: 15,
+        splitBolus: isHighFat,
+        splitBolusExplanation: isHighFat ? 'High fat meal may delay carb absorption' : '',
+        tips: [],
+      },
+      source: allEntries.length > 1 ? 'combined meal' : allEntries[0].analysis.source,
+    };
+  }, [mealItems, analysis, description]);
+
+  // Add current item to the meal and go back to input for the next one
+  const handleAddAnotherItem = () => {
+    if (!analysis) return;
+    setMealItems(prev => [...prev, { description: description.trim(), analysis }]);
+    // Reset input for next item but keep category and time
+    setDescription('');
+    setAnalysis(null);
+    setDoseSuggestion(null);
+    setMealInsight(null);
+    setAnswers([]);
+    setCurrentQuestionIndex(0);
+    setManualCarbs('');
+    setManualFat('');
+    setManualProtein('');
+    setManualCalories('');
+    setSearchResults([]);
+    setSearchQuery('');
+    setScreen('input');
+  };
+
+  // Remove a queued item
+  const handleRemoveItem = (index: number) => {
+    setMealItems(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleReset = () => {
     setDescription('');
     setAnalysis(null);
@@ -297,6 +369,7 @@ export default function LogMeal() {
     setManualCalories('');
     setSearchResults([]);
     setSearchQuery('');
+    setMealItems([]);
     setScreen('input');
   };
 
@@ -881,6 +954,41 @@ export default function LogMeal() {
             )}
           </Card>
 
+          {/* Combined meal summary when multi-item */}
+          {mealItems.length > 0 && analysis && (() => {
+            const combined = getCombinedAnalysis();
+            if (!combined) return null;
+            return (
+              <Card style={{ backgroundColor: Colors.primary + '10', borderColor: Colors.primary + '33' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <Ionicons name="layers" size={16} color={Colors.primary} />
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.primary }}>Combined Meal Total</Text>
+                </View>
+                {[...mealItems.map(i => i.description), description.trim()].filter(Boolean).map((d, idx) => (
+                  <Text key={idx} style={{ fontSize: 13, color: Colors.textSecondary, paddingLeft: 4 }}>• {d}</Text>
+                ))}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10 }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.primary }}>{combined.totalCarbs}g</Text>
+                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>Carbs</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.textPrimary }}>{combined.totalFat}g</Text>
+                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>Fat</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.textPrimary }}>{combined.totalProtein}g</Text>
+                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>Protein</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.textPrimary }}>{combined.totalCalories}</Text>
+                    <Text style={{ fontSize: 11, color: Colors.textMuted }}>kcal</Text>
+                  </View>
+                </View>
+              </Card>
+            );
+          })()}
+
           {/* Confirm & Log */}
           <TouchableOpacity
             style={[styles.primaryButton, saving && { opacity: 0.7 }]}
@@ -892,9 +1000,21 @@ export default function LogMeal() {
             ) : (
               <>
                 <Ionicons name="checkmark" size={18} color={Colors.background} />
-                <Text style={styles.primaryButtonText}>Confirm & Log Meal</Text>
+                <Text style={styles.primaryButtonText}>
+                  {mealItems.length > 0 ? `Log Meal (${mealItems.length + 1} items)` : 'Confirm & Log Meal'}
+                </Text>
               </>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.ghostButton, { borderColor: Colors.primary + '44', borderWidth: 1, backgroundColor: Colors.primary + '08' }]}
+            onPress={handleAddAnotherItem}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="add-circle-outline" size={18} color={Colors.primary} />
+              <Text style={[styles.ghostButtonText, { color: Colors.primary }]}>Add Another Item to This Meal</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.ghostButton} onPress={handleReset}>
@@ -949,9 +1069,34 @@ export default function LogMeal() {
           ))}
         </View>
 
+        {/* Queued items banner */}
+        {mealItems.length > 0 && (
+          <Card style={{ backgroundColor: Colors.primary + '10', borderColor: Colors.primary + '33' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <Ionicons name="layers" size={16} color={Colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.primary }}>
+                Building meal ({mealItems.length} {mealItems.length === 1 ? 'item' : 'items'} added)
+              </Text>
+            </View>
+            {mealItems.map((item, i) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
+                <Text style={{ fontSize: 13, color: Colors.textPrimary, flex: 1 }} numberOfLines={1}>
+                  {item.description} — {item.analysis.totalCarbs}g carbs
+                </Text>
+                <TouchableOpacity onPress={() => handleRemoveItem(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 4 }}>
+              Running total: {mealItems.reduce((s, i) => s + i.analysis.totalCarbs, 0)}g carbs
+            </Text>
+          </Card>
+        )}
+
         {/* Main input */}
         <Card>
-          <Text style={styles.label}>What are you eating?</Text>
+          <Text style={styles.label}>{mealItems.length > 0 ? 'Add next item:' : 'What are you eating?'}</Text>
           <TextInput
             style={styles.textInput}
             placeholder="e.g. Nando's butterfly chicken with large fries and rice"

@@ -33,6 +33,7 @@ import {
 import { calculateIOB } from '../../services/iob';
 import { ChatMessage, GlucoseReading, Meal, Correlation } from '../../types';
 import { OPENAI_API_KEY } from '../../config/keys';
+import { APP_KNOWLEDGE } from '../../constants/app-knowledge';
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -340,6 +341,8 @@ You can edit and delete meal and insulin entries using tool calls. Each meal/ins
 - ALWAYS confirm what you changed after making the edit (e.g. "Done — I've updated your sourdough bread to 42g carbs").
 - If you're unsure which entry they mean, ask them to clarify before making changes.
 - Never silently change entries — always tell the user what you did.
+
+${APP_KNOWLEDGE}
 
 ═══ COMPLIANCE & SAFETY ═══
 - NEVER prescribe specific insulin doses (e.g. never say "take 4 units now"). Instead say "your history suggests you may need a correction — discuss the right dose with your diabetes team".

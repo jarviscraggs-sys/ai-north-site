@@ -296,6 +296,13 @@ async function buildSystemPrompt(): Promise<string> {
 for a Type 1 diabetic named ${settings.user_name}. You have access to their FULL diabetes data history \
 and should analyse it thoroughly when answering questions.
 
+═══ PRIORITY RULES ═══
+1. If the user asks about their glucose, patterns, lows, highs, spikes, overnight, or anything data-related → ANALYSE THEIR DATA below. Reference specific readings, times, meals, insulin, and factors.
+2. Only explain app features (points, settings, navigation) if the user specifically asks about how the app works.
+3. NEVER answer a data question with a feature explanation. If unsure, default to data analysis.
+
+${APP_KNOWLEDGE}
+
 ═══ CURRENT STATE ═══
 GLUCOSE NOW: ${latest ? `${latest.value.toFixed(1)} mmol/L (${latest.trend})` : 'No recent reading'}
 IOB: ${iobResult.totalIOB.toFixed(1)}u active insulin${iobResult.isHigh ? ' ⚠️ HIGH — stacking risk' : ''}
@@ -342,8 +349,6 @@ You can edit and delete meal and insulin entries using tool calls. Each meal/ins
 - If you're unsure which entry they mean, ask them to clarify before making changes.
 - Never silently change entries — always tell the user what you did.
 
-${APP_KNOWLEDGE}
-
 ═══ COMPLIANCE & SAFETY ═══
 - NEVER prescribe specific insulin doses (e.g. never say "take 4 units now"). Instead say "your history suggests you may need a correction — discuss the right dose with your diabetes team".
 - NEVER diagnose conditions. Say "it looks like you may be experiencing dawn phenomenon" not "you have dawn phenomenon".
@@ -351,7 +356,10 @@ ${APP_KNOWLEDGE}
 - Frame insights as patterns and observations: "your data suggests...", "based on your history...", "it looks like..."
 - For any dosing questions, always end with: "Check with your diabetes team before making changes to your regimen."
 - GlucoMind provides educational insights and pattern analysis — not medical advice. Always remind users their diabetes team is the authority on treatment decisions.
-- If someone describes a medical emergency (severe hypo, DKA symptoms), tell them to call 999 or seek immediate medical help — do not try to manage it through the app.`;
+- If someone describes a medical emergency (severe hypo, DKA symptoms), tell them to call 999 or seek immediate medical help — do not try to manage it through the app.
+
+═══ REMINDER ═══
+Always re-read the user's ACTUAL question before answering. If they ask about glucose, lows, highs, patterns, meals, or insulin — use the data sections above, not app feature docs.`;
   } catch (e) {
     console.error('buildSystemPrompt error', e);
     return `You are GlucoMind AI, a helpful diabetes management assistant for a Type 1 diabetic. \
@@ -588,8 +596,8 @@ export default function ChatScreen() {
       let response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: apiMessages,
-        max_tokens: 400,
-        temperature: 0.7,
+        max_tokens: 800,
+        temperature: 0.5,
         tools: chatTools,
       });
 
@@ -616,7 +624,7 @@ export default function ChatScreen() {
         response = await openai.chat.completions.create({
           model: 'gpt-4o',
           messages: apiMessages,
-          max_tokens: 400,
+          max_tokens: 800,
           temperature: 0.7,
           tools: chatTools,
         });

@@ -12,7 +12,7 @@ import { getSetting, setSetting } from './database';
 
 // The push server URL — set this to your Railway deployment
 const PUSH_SERVER_URL_KEY = 'push_server_url';
-const DEFAULT_PUSH_SERVER_URL = 'https://glucomind-push.up.railway.app';
+const DEFAULT_PUSH_SERVER_URL = 'https://push-server-production-7832.up.railway.app';
 
 /**
  * Get the Expo push token for this device.

@@ -8,6 +8,7 @@ import { initDatabase, getAppState, getSetting } from '../services/database';
 import { requestNotificationPermissions } from '../services/notifications';
 import { registerBackgroundSync } from '../services/background-sync';
 import { initRemindersTable, rescheduleAllReminders } from '../services/reminders';
+import { registerPushToken } from '../services/push-registration';
 import { Colors } from '../constants/colors';
 import { KeyboardDoneBar } from '../components/DismissKeyboard';
 import { getCurrentUser, fetchProfile } from '../services/supabase';
@@ -26,6 +27,9 @@ export default function RootLayout() {
         await registerBackgroundSync();
         await initRemindersTable();
         await rescheduleAllReminders();
+
+        // Register push token with server (non-blocking)
+        registerPushToken().catch(() => {});
 
         const user = await getCurrentUser();
         if (!user) {

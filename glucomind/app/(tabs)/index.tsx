@@ -23,6 +23,7 @@ import Card from '../../components/Card';
 import TIRStreak from '../../components/TIRStreak';
 import { calculateIOB, formatIOB, calculateBasalIOB, BasalIOBResult } from '../../services/iob';
 import { predictHypo, HypoPrediction } from '../../services/hypo-prediction';
+import { startPatternAnalysisInterval, stopPatternAnalysisInterval } from '../../services/pattern-ai';
 import { IOBResult } from '../../types';
 
 export default function Dashboard() {
@@ -168,9 +169,13 @@ export default function Dashboard() {
       }
     });
 
+    // Start AI pattern analysis interval (every ~60 minutes)
+    startPatternAnalysisInterval();
+
     return () => {
       clearInterval(simInterval);
       stopSyncInterval();
+      stopPatternAnalysisInterval();
     };
   }, [loadData, loadDexcomStatus, simulateReading]);
 

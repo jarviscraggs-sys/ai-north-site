@@ -85,7 +85,24 @@ export async function runPatternAnalysis(): Promise<void> {
       val: f.value,
     }));
 
+    // Pre-compute key stats so the LLM has clear boundaries
+    const values = readings.map(r => r.value);
+    const glucoseMin = Math.min(...values);
+    const glucoseMax = Math.max(...values);
+    const glucoseAvg = values.reduce((s, v) => s + v, 0) / values.length;
+    const latest = readings[readings.length - 1];
+
     const dataPayload = JSON.stringify({
+      summary: {
+        period: '6 hours',
+        readingCount: readings.length,
+        glucoseMin: Math.round(glucoseMin * 10) / 10,
+        glucoseMax: Math.round(glucoseMax * 10) / 10,
+        glucoseAvg: Math.round(glucoseAvg * 10) / 10,
+        latestValue: latest?.value,
+        latestTrend: latest?.trend,
+        latestTime: latest ? new Date(latest.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : null,
+      },
       glucose: glucoseSummary,
       meals: mealSummary,
       insulin: insulinSummary,
@@ -111,7 +128,8 @@ export async function runPatternAnalysis(): Promise<void> {
 Rules:
 - Identify ONE genuinely noteworthy pattern or insight — something actionable or encouraging.
 - Do NOT state the obvious (e.g. "your glucose is 6.2" when it's clearly fine).
-- Be specific: reference times, values, and likely causes.
+- **CRITICAL: ONLY reference glucose values and times that ACTUALLY APPEAR in the data. Never invent or extrapolate values. The summary.glucoseMax is the highest reading — do not claim any value above it.**
+- Check the summary stats first: glucoseMin, glucoseMax, glucoseAvg. Your insight must be consistent with these.
 - Keep the title under 8 words and the message under 2 sentences.
 - Use mmol/L. Be warm but direct.
 

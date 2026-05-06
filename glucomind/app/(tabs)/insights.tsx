@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  ScrollView, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl
+  ScrollView, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl,
+  LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -12,6 +13,18 @@ import { estimateAllA1C, getA1CColor, getA1CTrend } from '../../services/a1c';
 import { analyseAndDetectAll, GlucosePattern } from '../../services/patterns';
 import { A1CEstimate } from '../../types';
 import Card from '../../components/Card';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const EXPAND_ANIM = {
+  duration: 220,
+  create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+  update: { type: LayoutAnimation.Types.easeInEaseOut },
+  delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+};
 
 export default function Insights() {
   const [weeklyInsight, setWeeklyInsight] = useState('');
@@ -33,6 +46,41 @@ export default function Insights() {
   const [a1cTrend, setA1cTrend] = useState<'up' | 'down' | 'stable'>('stable');
   const [patterns, setPatterns] = useState<GlucosePattern[]>([]);
   const [loadingPatterns, setLoadingPatterns] = useState(false);
+
+  // Expand/collapse state
+  const [expandedPatterns, setExpandedPatterns] = useState<Set<number>>(new Set());
+  const [expandedNotifs, setExpandedNotifs] = useState<Set<number>>(new Set());
+
+  const togglePatternExpand = useCallback((index: number) => {
+    LayoutAnimation.configureNext(EXPAND_ANIM);
+    setExpandedPatterns(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }, []);
+
+  const toggleNotifExpand = useCallback(async (notifId: number) => {
+    LayoutAnimation.configureNext(EXPAND_ANIM);
+    setExpandedNotifs(prev => {
+      const next = new Set(prev);
+      if (next.has(notifId)) next.delete(notifId);
+      else next.add(notifId);
+      return next;
+    });
+
+    // Mark as read when expanding
+    const notif = notifications.find(n => n.id === notifId);
+    if (notif && !notif.read) {
+      try {
+        await markNotificationRead(notifId);
+        setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+      } catch (e) {
+        console.warn('Failed to mark notification read:', e);
+      }
+    }
+  }, [notifications]);
 
   const loadData = useCallback(async () => {
     try {
@@ -139,8 +187,19 @@ export default function Insights() {
       case 'high': return { icon: 'arrow-up-circle', color: Colors.outOfRange };
       case 'low': return { icon: 'arrow-down-circle', color: Colors.outOfRange };
       case 'insulin_reminder': return { icon: 'medical', color: Colors.amber };
-      case 'pattern': return { icon: 'bulb', color: Colors.primary };
+      case 'pattern': return { icon: 'sparkles', color: Colors.primary };
       default: return { icon: 'notifications', color: Colors.textSecondary };
+    }
+  };
+
+  const getNotifTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'spike': return 'Spike Alert';
+      case 'high': return 'High Glucose';
+      case 'low': return 'Low Glucose';
+      case 'insulin_reminder': return 'Insulin Reminder';
+      case 'pattern': return 'AI Insight';
+      default: return 'Alert';
     }
   };
 
@@ -164,6 +223,51 @@ export default function Insights() {
       case 'warning': return Colors.amber;
       case 'info': return Colors.primary;
     }
+  };
+
+  const renderConfidenceBar = (confidence?: number) => {
+    if (confidence == null) return null;
+    const pct = Math.round(confidence * 100);
+    const barColor = pct >= 75 ? Colors.inRange : pct >= 50 ? Colors.amber : Colors.outOfRange;
+    return (
+      <View style={expandStyles.confidenceRow}>
+        <Text style={expandStyles.confidenceLabel}>Confidence</Text>
+        <View style={expandStyles.confidenceBarBg}>
+          <View style={[expandStyles.confidenceBarFill, { width: `${pct}%`, backgroundColor: barColor }]} />
+        </View>
+        <Text style={[expandStyles.confidencePct, { color: barColor }]}>{pct}%</Text>
+      </View>
+    );
+  };
+
+  const renderPatternData = (data: any) => {
+    if (!data || typeof data !== 'object') return null;
+    const entries = Object.entries(data).filter(
+      ([k]) => !['category'].includes(k),
+    );
+    if (entries.length === 0) return null;
+
+    const formatKey = (k: string) =>
+      k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const formatValue = (v: any) => {
+      if (typeof v === 'number') {
+        if (Number.isInteger(v)) return String(v);
+        return v.toFixed(1);
+      }
+      if (typeof v === 'string' && !isNaN(Number(v))) return Number(v).toFixed(1);
+      return String(v);
+    };
+
+    return (
+      <View style={expandStyles.dataGrid}>
+        {entries.map(([k, v]) => (
+          <View key={k} style={expandStyles.dataPill}>
+            <Text style={expandStyles.dataKey}>{formatKey(k)}</Text>
+            <Text style={expandStyles.dataValue}>{formatValue(v)}</Text>
+          </View>
+        ))}
+      </View>
+    );
   };
 
   return (
@@ -190,28 +294,53 @@ export default function Insights() {
         patterns.map((pattern, index) => {
           const color = getPatternSeverityColor(pattern.severity);
           const icon = getPatternIcon(pattern.type);
+          const isExpanded = expandedPatterns.has(index);
           return (
-            <Card
+            <TouchableOpacity
               key={`${pattern.type}-${index}`}
-              style={[patternStyles.card, { borderColor: color + '44' }]}
+              activeOpacity={0.7}
+              onPress={() => togglePatternExpand(index)}
             >
-              <View style={patternStyles.cardHeader}>
-                <View style={[patternStyles.iconBadge, { backgroundColor: color + '22' }]}>
-                  <Ionicons name={icon as any} size={18} color={color} />
+              <Card style={[patternStyles.card, { borderColor: color + '44' }]}>
+                <View style={patternStyles.cardHeader}>
+                  <View style={[patternStyles.iconBadge, { backgroundColor: color + '22' }]}>
+                    <Ionicons name={icon as any} size={18} color={color} />
+                  </View>
+                  <View style={patternStyles.cardHeaderText}>
+                    <Text style={[patternStyles.cardTitle, { color }]}>{pattern.title}</Text>
+                    <Text style={patternStyles.severityLabel}>
+                      {pattern.severity.charAt(0).toUpperCase() + pattern.severity.slice(1)}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={Colors.textMuted}
+                  />
                 </View>
-                <View style={patternStyles.cardHeaderText}>
-                  <Text style={[patternStyles.cardTitle, { color }]}>{pattern.title}</Text>
-                  <Text style={patternStyles.severityLabel}>
-                    {pattern.severity.charAt(0).toUpperCase() + pattern.severity.slice(1)}
-                  </Text>
-                </View>
-              </View>
-              <Text style={patternStyles.description}>{pattern.description}</Text>
-              <View style={patternStyles.recommendationRow}>
-                <Ionicons name="bulb-outline" size={13} color={Colors.textMuted} />
-                <Text style={patternStyles.recommendation}>{pattern.recommendation}</Text>
-              </View>
-            </Card>
+
+                {/* Collapsed: truncated description */}
+                {!isExpanded && (
+                  <Text style={patternStyles.description} numberOfLines={2}>{pattern.description}</Text>
+                )}
+
+                {/* Expanded: full details */}
+                {isExpanded && (
+                  <View style={expandStyles.expandedContainer}>
+                    <Text style={patternStyles.description}>{pattern.description}</Text>
+
+                    {renderConfidenceBar((pattern as any).confidence)}
+
+                    {pattern.data && renderPatternData(pattern.data)}
+
+                    <View style={patternStyles.recommendationRow}>
+                      <Ionicons name="bulb-outline" size={13} color={Colors.textMuted} />
+                      <Text style={patternStyles.recommendation}>{pattern.recommendation}</Text>
+                    </View>
+                  </View>
+                )}
+              </Card>
+            </TouchableOpacity>
           );
         })
       )}
@@ -437,17 +566,75 @@ export default function Insights() {
           <Text style={styles.heading}>Alert History</Text>
           <Card>
             {notifications.slice(0, 10).map((notif, index) => {
+              const isAI = notif.type === 'pattern';
               const { icon, color } = getNotifIcon(notif.type);
+              const isExpanded = expandedNotifs.has(notif.id);
+              const typeLabel = getNotifTypeLabel(notif.type);
               return (
-                <View key={notif.id} style={[styles.notifItem, index > 0 && styles.notifBorder]}>
-                  <Ionicons name={icon as any} size={16} color={color} />
-                  <Text style={[styles.notifText, notif.read && styles.notifRead]} numberOfLines={2}>
-                    {notif.message}
-                  </Text>
-                  <Text style={styles.notifTime}>
-                    {new Date(notif.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  key={notif.id}
+                  activeOpacity={0.7}
+                  onPress={() => toggleNotifExpand(notif.id)}
+                >
+                  <View style={[
+                    notifStyles.item,
+                    index > 0 && notifStyles.border,
+                    !notif.read && notifStyles.unreadItem,
+                    isAI && notifStyles.aiItem,
+                  ]}>
+                    {/* Unread dot */}
+                    {!notif.read && <View style={[notifStyles.unreadDot, { backgroundColor: color }]} />}
+
+                    <View style={notifStyles.itemContent}>
+                      {/* Header row */}
+                      <View style={notifStyles.headerRow}>
+                        <View style={[
+                          notifStyles.iconWrap,
+                          isAI && { backgroundColor: Colors.primary + '18' },
+                        ]}>
+                          <Ionicons name={icon as any} size={16} color={color} />
+                        </View>
+                        <View style={notifStyles.headerText}>
+                          <Text style={[
+                            notifStyles.typeLabel,
+                            { color },
+                            isAI && notifStyles.aiLabel,
+                          ]}>
+                            {typeLabel}
+                          </Text>
+                          <Text style={notifStyles.time}>
+                            {isExpanded
+                              ? new Date(notif.timestamp).toLocaleString('en-GB', {
+                                  day: 'numeric', month: 'short', year: 'numeric',
+                                  hour: '2-digit', minute: '2-digit',
+                                })
+                              : new Date(notif.timestamp).toLocaleTimeString('en-GB', {
+                                  hour: '2-digit', minute: '2-digit',
+                                })
+                            }
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={14}
+                          color={Colors.textMuted}
+                        />
+                      </View>
+
+                      {/* Message */}
+                      <Text
+                        style={[
+                          notifStyles.message,
+                          notif.read && notifStyles.messageRead,
+                          isAI && isExpanded && notifStyles.aiMessage,
+                        ]}
+                        numberOfLines={isExpanded ? undefined : 2}
+                      >
+                        {notif.message}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               );
             })}
           </Card>
@@ -609,29 +796,151 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontStyle: 'italic',
   },
-  notifItem: {
+});
+
+// ─── Expanded Content Styles ──────────────────────────────────────────────────
+
+const expandStyles = StyleSheet.create({
+  expandedContainer: {
+    marginTop: 2,
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  confidenceLabel: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    width: 72,
+  },
+  confidenceBarBg: {
+    flex: 1,
+    height: 6,
+    backgroundColor: Colors.surface,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  confidenceBarFill: {
+    height: 6,
+    borderRadius: 3,
+  },
+  confidencePct: {
+    fontSize: 12,
+    fontWeight: '700',
+    width: 36,
+    textAlign: 'right',
+  },
+  dataGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  dataPill: {
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dataKey: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  dataValue: {
+    fontSize: 13,
+    color: Colors.textPrimary,
+    fontWeight: '700',
+  },
+});
+
+// ─── Notification Styles ──────────────────────────────────────────────────────
+
+const notifStyles = StyleSheet.create({
+  item: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 10,
-    gap: 8,
+    paddingLeft: 4,
   },
-  notifBorder: {
+  border: {
     borderTopWidth: 1,
     borderTopColor: Colors.cardBorder,
   },
-  notifText: {
+  unreadItem: {
+    paddingLeft: 0,
+  },
+  aiItem: {
+    // Subtle AI background tint on expanded handled inline
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    marginRight: 6,
+  },
+  itemContent: {
     flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  typeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  aiLabel: {
+    letterSpacing: 0.5,
+  },
+  time: {
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  message: {
     color: Colors.textSecondary,
     fontSize: 12,
     lineHeight: 17,
+    marginLeft: 36,
   },
-  notifRead: {
+  messageRead: {
     color: Colors.textMuted,
   },
-  notifTime: {
-    color: Colors.textMuted,
-    fontSize: 10,
-    marginTop: 1,
+  aiMessage: {
+    backgroundColor: Colors.primary + '08',
+    borderRadius: 8,
+    padding: 8,
+    marginLeft: 36,
+    marginTop: 2,
   },
 });
 

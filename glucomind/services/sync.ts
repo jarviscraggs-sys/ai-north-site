@@ -43,7 +43,7 @@ import {
 } from './database';
 import {
   sendSpikeAlert, sendHighAlert, sendLowAlert,
-  sendSpikePrompt, sendHighWithPrompt, sendLowWithPrompt,
+  sendSpikePrompt, sendHighWithPrompt, sendLowWithPrompt, sendHypoPredictionAlert,
 } from './notifications';
 import { predictHypo } from './hypo-prediction';
 import { updateWidget } from './widget-bridge';
@@ -477,12 +477,17 @@ async function checkAlerts(reading: GlucoseReading): Promise<void> {
     const hasRecentInsulin = recentInsulin.length > 0;
 
     // ── HYPO PREDICTION ───────────────────────────────────────────────
-    // Predict low BEFORE it happens
+    // Predict low BEFORE it happens — use prediction-specific notification
     try {
       const prediction = await predictHypo();
-      if (prediction.predicted && prediction.severity !== 'none') {
+      if (prediction.predicted && prediction.severity !== 'none' && reading.value >= settings.target_low) {
+        // Only fire prediction alert if NOT already low (actual low handled below)
         if (now - _lastLowAlert > 15 * 60 * 1000) {
-          await sendLowWithPrompt(reading.value);
+          await sendHypoPredictionAlert(
+            reading.value,
+            prediction.predictedLowIn,
+            prediction.targetLow,
+          );
           _lastLowAlert = now;
         }
       }
